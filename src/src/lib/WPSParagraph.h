@@ -26,6 +26,7 @@
 #ifndef WPS_PARAGRAPH
 #  define WPS_PARAGRAPH
 
+#include <assert.h>
 #include <iostream>
 
 #include <vector>
@@ -34,6 +35,9 @@
 
 #include "WPSList.h"
 
+class WPSContentListener;
+class WPXPropertyListVector;
+
 struct WPSTabStop
 {
 	enum Alignment { LEFT, RIGHT, CENTER, DECIMAL, BAR };
@@ -41,7 +45,7 @@ struct WPSTabStop
 		m_position(position), m_alignment(alignment), m_leaderCharacter(leaderCharacter), m_leaderNumSpaces(leaderNumSpaces)
 	{
 	}
-	void addTo(librevenge::RVNGPropertyListVector &propList, double decalX=0.0) const;
+	void addTo(WPXPropertyListVector &propList, double decalX=0.0);
 	//! operator <<
 	friend std::ostream &operator<<(std::ostream &o, WPSTabStop const &ft);
 	double m_position;
@@ -54,28 +58,18 @@ struct WPSTabStop
 struct WPSParagraph
 {
 	typedef WPSList::Level ListLevel;
-	/** the line spacing type: fixed or at least */
-	enum LineSpacingType { Fixed, AtLeast };
 
 	//! constructor
-	WPSParagraph() : m_spacingsInterlineUnit(librevenge::RVNG_PERCENT), m_spacingsInterlineType(Fixed), m_tabs(), m_justify(libwps::JustificationLeft),
-		m_breakStatus(0), m_listLevelIndex(0), m_listLevel(), m_backgroundColor(WPSColor::white()),
+	WPSParagraph() : m_tabs(), m_justify(libwps::JustificationLeft),
+		m_breakStatus(0), m_listLevelIndex(0), m_listLevel(), m_backgroundColor(0xFFFFFF),
 		m_border(0), m_borderStyle(), m_extra("")
 	{
-		for (int i = 0; i < 3; i++) m_margins[i] = m_spacings[i] = 0.0;
+		for(int i = 0; i < 3; i++) m_margins[i] = m_spacings[i] = 0.0;
 		m_spacings[0] = 1.0; // interline normal
 	}
-	// destructor
 	virtual ~WPSParagraph() {}
-	//! add to the propList
-	void addTo(librevenge::RVNGPropertyList &propList, bool inTable) const;
-	//! set the interline
-	void setInterline(double value, librevenge::RVNGUnit unit, LineSpacingType type=Fixed)
-	{
-		m_spacings[0]=value;
-		m_spacingsInterlineUnit=unit;
-		m_spacingsInterlineType=type;
-	}
+	//! send data to the listener
+	void send(shared_ptr<WPSContentListener> listener) const;
 	//! operator <<
 	friend std::ostream &operator<<(std::ostream &o, WPSParagraph const &ft);
 
@@ -91,10 +85,6 @@ struct WPSParagraph
 	 * - 1: before
 	 * - 2: after */
 	double m_spacings[3]; // 0: interline, 1: before, 2: after
-	/** the interline unit PERCENT or INCH, ... */
-	librevenge::RVNGUnit m_spacingsInterlineUnit;
-	/** the interline type: fixed, atLeast, ... */
-	LineSpacingType m_spacingsInterlineType;
 	//! the tabulations
 	std::vector<WPSTabStop> m_tabs;
 
@@ -109,7 +99,7 @@ struct WPSParagraph
 	ListLevel m_listLevel;
 
 	//! the background color
-	WPSColor m_backgroundColor;
+	uint32_t m_backgroundColor;
 
 	//! list of bits to indicated a border 1: LeftBorderBit, 2: RightBorderBit, ...
 	int m_border;

@@ -24,12 +24,16 @@
 
 #include <vector>
 
-#include <librevenge-stream/librevenge-stream.h>
+#include <libwpd-stream/WPXStream.h>
 #include "libwps_internal.h"
-#include "libwps_tools_win.h"
 
 #include "WPSParser.h"
 
+class WPXString;
+class WPSContentListener;
+typedef WPSContentListener WPS4ContentListener;
+class WPSEntry;
+class WPSPosition;
 class WPSPageSpan;
 
 namespace WPS4ParserInternal
@@ -53,34 +57,33 @@ class WPS4Parser : public WPSParser
 
 public:
 	//! constructor
-	WPS4Parser(RVNGInputStreamPtr &input, WPSHeaderPtr &header,
-	           libwps_tools_win::Font::Type encoding=libwps_tools_win::Font::UNKNOWN);
+	WPS4Parser(WPXInputStreamPtr &input, WPSHeaderPtr &header);
 	//! destructor
 	~WPS4Parser();
 	//! called by WPSDocument to parse the file
-	void parse(librevenge::RVNGTextInterface *documentInterface);
-	//! checks if the document header is correct (or not)
-	bool checkHeader(WPSHeader *header, bool strict=false);
+	void parse(WPXDocumentInterface *documentInterface);
 protected:
 	//! color
-	bool getColor(int id, WPSColor &color) const;
+	bool getColor(int id, uint32_t &color) const;
 
+	//! returns the file size (or the ole zone size)
+	long getSizeFile() const;
 	//! sets the file size ( filled by WPS4Text )
 	void setSizeFile(long sz);
 	//! return true if the pos is in the file, update the file size if need
-	bool checkFilePosition(long pos);
+	bool checkInFile(long pos);
 
 	//! adds a new page
 	void newPage(int number);
 	//! set the listener
-	void setListener(shared_ptr<WPSContentListener> listener);
+	void setListener(shared_ptr<WPS4ContentListener> listener);
 
 	/** tries to parse the main zone, ... */
 	bool createStructures();
 	/** tries to parse the different OLE zones ( except the main zone ) */
 	bool createOLEStructures();
 	/** creates the main listener */
-	shared_ptr<WPSContentListener> createListener(librevenge::RVNGTextInterface *interface);
+	shared_ptr<WPS4ContentListener> createListener(WPXDocumentInterface *interface);
 
 	// interface with text parser
 
@@ -90,21 +93,15 @@ protected:
 	float pageWidth() const;
 	//! returns the number of columns
 	int numColumns() const;
-	/** returns the default font type, ie. the encoding given by the constructor if given
-		or the encoding deduiced from the version.
-	 */
-	libwps_tools_win::Font::Type getDefaultFontType() const;
-	//! returns the document codepage ( given from the file OEM field )
-	libwps_tools_win::Font::Type getOEMFontType() const;
 
 	/** creates a document for a comment entry and then send the data
 	 *
 	 * \note actually all bookmarks (comments) are empty */
 	void createDocument(WPSEntry const &entry, libwps::SubDocumentType type);
 	/** creates a document for a footnote entry with label and then send the data*/
-	void createNote(WPSEntry const &entry, librevenge::RVNGString const &label);
+	void createNote(WPSEntry const &entry, WPXString const &label);
 	//! creates a textbox and then send the data
-	void createTextBox(WPSEntry const &entry, WPSPosition const &pos, librevenge::RVNGPropertyList &extras);
+	void createTextBox(WPSEntry const &entry, WPSPosition const &pos, WPXPropertyList &extras);
 	//! sends text corresponding to the entry to the listener (via WPS4Text)
 	void send(WPSEntry const &entry, libwps::SubDocumentType type);
 
@@ -113,12 +110,12 @@ protected:
 	/** tries to read a picture ( via its WPS4Graph )
 	 *
 	 * \note returns the object id or -1 if find nothing */
-	int readObject(RVNGInputStreamPtr input, WPSEntry const &entry);
+	int readObject(WPXInputStreamPtr input, WPSEntry const &entry);
 
 	/** sends an object with given id ( via its WPS4Graph )
 	 *
-	 * The object is sent as a character with given size \a position */
-	void sendObject(WPSPosition const &position, int id);
+	 * The object is sent as a character with given size \a size */
+	void sendObject(Vec2f const &size, int id);
 
 	//
 	// low level
@@ -144,7 +141,7 @@ protected:
 	 */
 	bool readDocWindowsInfo(WPSEntry const &entry);
 
-	shared_ptr<WPSContentListener> m_listener; /* the listener (if set)*/
+	shared_ptr<WPS4ContentListener> m_listener; /* the listener (if set)*/
 	//! the graph parser
 	shared_ptr<WPS4Graph> m_graphParser;
 	//! the text parser

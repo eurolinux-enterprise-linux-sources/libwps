@@ -31,6 +31,7 @@
 #ifndef WPS_WIN
 #  define WPS_WIN
 
+#  include <assert.h>
 #  include <string>
 
 #  include "libwps_internal.h"
@@ -43,42 +44,76 @@ class Font
 {
 public:
 	//! enum Type \brief the knowned DOS© and Windows3© fonts
-	enum Type { CP_037, CP_424, CP_437, CP_500, CP_737, CP_775,
-	            DOS_850, CP_852, CP_855, CP_856, CP_857, CP_860,
-	            CP_861, CP_862, CP_863, CP_864, CP_865, CP_866,
-	            CP_869, CP_874, CP_875, CP_932, CP_950, CP_1006,
-	            CP_1026, WIN3_ARABIC, WIN3_BALTIC, WIN3_CEUROPE,
-	            WIN3_CYRILLIC, WIN3_GREEK, WIN3_HEBREW, WIN3_TURKISH,
-	            WIN3_VIETNAMESE, WIN3_WEUROPE,
-
-	            MAC_ARABIC, MAC_CELTIC, MAC_CEUROPE, MAC_CROATIAN,
-	            MAC_CYRILLIC, MAC_DEVANAGA, MAC_FARSI, MAC_GAELIC,
-	            MAC_GREEK, MAC_GUJARATI, MAC_GURMUKHI, MAC_HEBREW,
-	            MAC_ICELAND, MAC_INUIT, MAC_ROMAN, MAC_ROMANIAN,
-	            MAC_THAI, MAC_TURKISH,
-
-	            MAC_SYMBOL, WIN3_WINGDINGS,
-	            UNKNOWN
+	enum Type { DOS_850,
+	            WIN3_ARABIC, WIN3_BALTIC, WIN3_CEUROPE, WIN3_CYRILLIC,
+	            WIN3_GREEK, WIN3_HEBREW, WIN3_TURKISH,
+	            WIN3_VIETNAMESE, WIN3_WEUROPE
 	          };
-	// CP_10006, CP_10007, CP_10029, CP_10079, CP_10081
+
 	//! converts a character in unicode, knowing the character and the font type
-	static unsigned long unicode(unsigned char c, Type type);
-	//! converts a LICS character in unicode, knowing the character and the font type
-	static unsigned long LICSunicode(unsigned char c);
-	/*! returns the type corresponding to Windows OEM */
-	static Type getTypeForOEM(int oem);
-	/*! returns the type corresponding to encoding string */
-	static Type getTypeForString(char const *encoding);
+	static unsigned long unicode(unsigned char c, Type type)
+	{
+		switch(type)
+		{
+		case DOS_850:
+			return unicodeFromCP850(c);
+		case WIN3_ARABIC:
+			return unicodeFromCP1256(c);
+		case WIN3_BALTIC:
+			return unicodeFromCP1257(c);
+		case WIN3_CEUROPE:
+			return unicodeFromCP1250(c);
+		case WIN3_CYRILLIC:
+			return unicodeFromCP1251(c);
+		case WIN3_GREEK:
+			return unicodeFromCP1253(c);
+		case WIN3_HEBREW:
+			return unicodeFromCP1255(c);
+		case WIN3_TURKISH:
+			return unicodeFromCP1254(c);
+		case WIN3_VIETNAMESE:
+			return unicodeFromCP1258(c);
+		case WIN3_WEUROPE:
+			return unicodeFromCP1252(c);
+		default:
+			assert(0);
+			return c;
+		}
+	}
+
 	/*! \brief returns the type of the font using the fontName
 	 * \param name the font name.
 	 *
 	 * \note \a name can be modified to suppress an extension
 	 */
-	static Type getFontType(librevenge::RVNGString &name);
-	//! return the type name
-	static librevenge::RVNGString getTypeName(Type type);
-	static librevenge::RVNGString unicodeString(const unsigned char *p, unsigned long size, Type type);
+	static Type getWin3Type(std::string &name);
+
 protected:
+	//
+	// DOS FONTS
+	//
+
+	//! dos850 to unicode
+	static unsigned long unicodeFromCP850(unsigned char c);
+
+	//! Windows3© central europe to unicode
+	static unsigned long unicodeFromCP1250(unsigned char c);
+	//! Windows3© cyrillic to unicode
+	static unsigned long unicodeFromCP1251(unsigned char c);
+	//! Windows3© western europe (the default) to unicode
+	static unsigned long unicodeFromCP1252(unsigned char c);
+	//! Windows3© greek to unicode
+	static unsigned long unicodeFromCP1253(unsigned char c);
+	//! Windows3© turkish to unicode
+	static unsigned long unicodeFromCP1254(unsigned char c);
+	//! Windows3© hebrew to unicode
+	static unsigned long unicodeFromCP1255(unsigned char c);
+	//! Windows3© arabic to unicode
+	static unsigned long unicodeFromCP1256(unsigned char c);
+	//! Windows3© baltic to unicode
+	static unsigned long unicodeFromCP1257(unsigned char c);
+	//! Windows3© vietnamese to unicode
+	static unsigned long unicodeFromCP1258(unsigned char c);
 };
 
 // see http://msdn.microsoft.com/en-us/library/bb213877.aspx (Community Content)
@@ -89,8 +124,6 @@ namespace Language
 std::string name(long id);
 //! returns the simplified locale name
 std::string localeName(long id);
-//! add locale name (ie. fo:language,fo:country ) to propList
-void addLocaleName(long id, librevenge::RVNGPropertyList &propList);
 //! returns the default language: 0x409 : english(US)
 long getDefault();
 }

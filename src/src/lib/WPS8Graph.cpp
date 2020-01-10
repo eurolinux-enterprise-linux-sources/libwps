@@ -28,13 +28,10 @@
 #include <iomanip>
 #include <iostream>
 
-#include <librevenge/librevenge.h>
+#include <libwpd/libwpd.h>
 
 #include "WPSContentListener.h"
 #include "WPSEntry.h"
-#include "WPSFont.h"
-#include "WPSOLEParser.h"
-#include "WPSParagraph.h"
 #include "WPSPosition.h"
 
 #include "WPS8.h"
@@ -49,13 +46,11 @@ namespace WPS8GraphInternal
 struct Pict
 {
 	//! constructor
-	Pict() : m_data(), m_size(), m_mime("image/pict"), m_parsed(false) {}
+	Pict() : m_data(), m_size(), m_parsed(false) {}
 	//! the content
-	librevenge::RVNGBinaryData m_data;
+	WPXBinaryData m_data;
 	//! the size of the picture (if known)
 	Vec2f m_size;
-	//! the mime type
-	std::string m_mime;
 	//! flag to know if the data was send to the listener
 	bool m_parsed;
 };
@@ -141,8 +136,9 @@ void WPS8Graph::computePositions() const
 	m_state->m_numPages = (m_state->m_pictMap.size() || m_state->m_oleMap.size()) ? 1 : 0;
 }
 
-void WPS8Graph::storeObjects(std::vector<WPSOLEParserObject> const &objects,
-                             std::vector<int> const &ids)
+void WPS8Graph::storeObjects(std::vector<WPXBinaryData> const &objects,
+                             std::vector<int> const &ids,
+                             std::vector<WPSPosition> const &positions)
 {
 	size_t numObject = objects.size();
 	if (numObject != ids.size())
@@ -153,10 +149,9 @@ void WPS8Graph::storeObjects(std::vector<WPSOLEParserObject> const &objects,
 	for (size_t i = 0; i < numObject; i++)
 	{
 		WPS8GraphInternal::Pict ole;
-		ole.m_data = objects[i].m_data;
-		float scale = 1.0f/objects[i].m_position.getInvUnitScale(librevenge::RVNG_INCH);
-		ole.m_size = scale*objects[i].m_position.naturalSize();
-		ole.m_mime = objects[i].m_mime;
+		ole.m_data = objects[i];
+		float scale = 1.0f/positions[i].getInvUnitScale(WPX_INCH);
+		ole.m_size = scale*positions[i].naturalSize();
 		m_state->m_oleMap[ids[i]] = ole;
 	}
 }
@@ -164,7 +159,7 @@ void WPS8Graph::storeObjects(std::vector<WPSOLEParserObject> const &objects,
 ////////////////////////////////////////////////////////////
 // find all structures which correspond to the picture
 ////////////////////////////////////////////////////////////
-bool WPS8Graph::readStructures(RVNGInputStreamPtr input)
+bool WPS8Graph::readStructures(WPXInputStreamPtr input)
 {
 	WPS8Parser::NameMultiMap &nameTable = m_mainParser.getNameEntryMap();
 	WPS8Parser::NameMultiMap::iterator pos;
@@ -173,7 +168,8 @@ bool WPS8Graph::readStructures(RVNGInputStreamPtr input)
 	pos = nameTable.lower_bound("BDR ");
 	while (nameTable.end() != pos)
 	{
-		WPSEntry const &entry = pos++->second;
+		WPSEntry const &entry = pos->second;
+		pos++;
 		if (!entry.hasName("BDR ")) break;
 		if (!entry.hasType("WBDR")) continue;
 		readBDR(input, entry);
@@ -183,7 +179,8 @@ bool WPS8Graph::readStructures(RVNGInputStreamPtr input)
 	pos = nameTable.lower_bound("IBGF");
 	while (pos != nameTable.end())
 	{
-		WPSEntry const &entry = pos++->second;
+		WPSEntry const &entry = pos->second;
+		pos++;
 		if (!entry.hasName("IBGF")) break;
 		if (!entry.hasType("IBGF")) continue;
 
@@ -193,7 +190,8 @@ bool WPS8Graph::readStructures(RVNGInputStreamPtr input)
 	pos = nameTable.lower_bound("PICT");
 	while (pos != nameTable.end())
 	{
-		WPSEntry const &entry = pos++->second;
+		WPSEntry const &entry = pos->second;
+		pos++;
 		if (!entry.hasName("PICT")) break;
 
 		readPICT(input, entry);
@@ -238,12 +236,13 @@ bool WPS8Graph::sendObject(WPSPosition const &posi, int id, bool ole)
 	WPSPosition finalPos(posi);
 	finalPos.setSize(size);
 	finalPos.setNaturalSize(naturalSize);
-	m_listener->insertPicture(finalPos, pict.m_data, pict.m_mime);
+	m_listener->insertPicture(finalPos, pict.m_data);
 	return true;
 }
 
 bool WPS8Graph::sendIBGF(WPSPosition const &posi, int ibgfId)
 {
+	typedef WPS8GraphInternal::Pict Pict;
 	std::map<int, WPSEntry>::iterator pos = m_state->m_ibgfMap.find(ibgfId);
 	if (pos == m_state->m_ibgfMap.end())
 	{
@@ -281,7 +280,8 @@ void WPS8Graph::sendObjects(int page, int)
 
 		while (pos != map.end())
 		{
-			Pict &pict = pos++->second;
+			Pict &pict = pos->second;
+			pos++;
 			if (pict.m_parsed) continue;
 
 #ifdef DEBUG
@@ -290,9 +290,9 @@ void WPS8Graph::sendObjects(int page, int)
 				firstSend = true;
 				WPS_DEBUG_MSG(("WPS8Graph::sendObjects: find some extra pictures\n"));
 				m_listener->setFont(WPSFont::getDefault());
-				m_listener->setParagraph(WPSParagraph());
+				m_listener->setParagraphJustification(libwps::JustificationLeft);
 				m_listener->insertEOL();
-				librevenge::RVNGString message = "--------- The original document has some extra pictures: -------- ";
+				WPXString message = "--------- The original document has some extra pictures: -------- ";
 				m_listener->insertUnicodeString(message);
 				m_listener->insertEOL();
 			}
@@ -306,7 +306,7 @@ void WPS8Graph::sendObjects(int page, int)
 			position.setNaturalSize(pict.m_size);
 			position.setRelativePosition(WPSPosition::CharBaseLine);
 			position.m_wrapping = WPSPosition::WDynamic;
-			m_listener->insertPicture(position, pict.m_data, pict.m_mime);
+			m_listener->insertPicture(position, pict.m_data);
 		}
 	}
 
@@ -317,15 +317,16 @@ void WPS8Graph::sendObjects(int page, int)
 	while (pos != m_state->m_borderMap.end())
 	{
 		int id = pos->first;
-		bool parsed = pos++->second.m_parsed;
+		bool parsed = pos->second.m_parsed;
+		pos++;
 		if (parsed) continue;
 		if (!firstSend)
 		{
 			firstSend = true;
 			m_listener->setFont(WPSFont::getDefault());
-			m_listener->setParagraph(WPSParagraph());
+			m_listener->setParagraphJustification(libwps::JustificationLeft);
 			m_listener->insertEOL();
-			librevenge::RVNGString message;
+			WPXString message;
 			message = "--------- The original document used some complex border: -------- ";
 			m_listener->insertUnicodeString(message);
 			m_listener->insertEOL();
@@ -346,8 +347,8 @@ void WPS8Graph::sendBorder(int borderId)
 	border.m_parsed = true;
 
 	m_listener->setFont(WPSFont::getDefault());
-	m_listener->setParagraph(WPSParagraph());
-	librevenge::RVNGString message("-------");
+	m_listener->setParagraphJustification(libwps::JustificationLeft);
+	WPXString message("-------");
 	message.append(border.m_name.c_str());
 	message.append("---------");
 	m_listener->insertUnicodeString(message);
@@ -363,10 +364,10 @@ void WPS8Graph::sendBorder(int borderId)
 		if (border.m_pictList[id].m_size.x() > 0 &&
 		        border.m_pictList[id].m_size.y() > 0)
 			pos.setSize(border.m_pictList[id].m_size);
-		m_listener->insertPicture(pos, border.m_pictList[id].m_data, border.m_pictList[id].m_mime);
+		m_listener->insertPicture(pos, border.m_pictList[id].m_data);
 		if (i == 3)
 		{
-			message = librevenge::RVNGString("-----");
+			message = WPXString("-----");
 			m_listener->insertUnicodeString(message);
 		}
 	}
@@ -379,7 +380,7 @@ void WPS8Graph::sendBorder(int borderId)
 ////////////////////////////////////////////////////////////
 
 // Read a PICT/MEF4 entry :  read uncompressed picture of sx*sy of rgb
-bool WPS8Graph::readPICT(RVNGInputStreamPtr input, WPSEntry const &entry)
+bool WPS8Graph::readPICT(WPXInputStreamPtr input, WPSEntry const &entry)
 {
 	long page_offset = entry.begin();
 	long length = entry.end();
@@ -397,7 +398,7 @@ bool WPS8Graph::readPICT(RVNGInputStreamPtr input, WPSEntry const &entry)
 		return false;
 	}
 
-	input->seek(page_offset, librevenge::RVNG_SEEK_SET);
+	input->seek(page_offset, WPX_SEEK_SET);
 	std::string name;
 	for (int i = 0; i < 4; i++) name += (char) libwps::readU8(input);
 	if (strncmp("MEF4", name.c_str(), 4))
@@ -440,7 +441,7 @@ bool WPS8Graph::readPICT(RVNGInputStreamPtr input, WPSEntry const &entry)
 
 	}
 	else
-		input->seek(page_offset+24, librevenge::RVNG_SEEK_SET);
+		input->seek(page_offset+24, WPX_SEEK_SET);
 
 	if (input->tell() != endPos)
 	{
@@ -455,7 +456,7 @@ bool WPS8Graph::readPICT(RVNGInputStreamPtr input, WPSEntry const &entry)
 
 // reads a IBGF zone
 // Warning: only seems very simple IBGF, complex may differ
-bool WPS8Graph::readIBGF(RVNGInputStreamPtr input, WPSEntry const &entry)
+bool WPS8Graph::readIBGF(WPXInputStreamPtr input, WPSEntry const &entry)
 {
 	libwps::DebugStream f;
 	if (!entry.hasType(entry.name()))
@@ -470,12 +471,12 @@ bool WPS8Graph::readIBGF(RVNGInputStreamPtr input, WPSEntry const &entry)
 
 	if (length != 26)
 	{
-		WPS_DEBUG_MSG(("WPS8Graph::readIBGF: IBGF length=0x%lx\n", (unsigned long) length));
+		WPS_DEBUG_MSG(("WPS8Graph::readIBGF: IBGF length=0x%lx\n", length));
 		return false;
 	}
 
 	entry.setParsed();
-	input->seek(page_offset, librevenge::RVNG_SEEK_SET);
+	input->seek(page_offset, WPX_SEEK_SET);
 	std::string name;
 	for (int i = 0; i < 4; i++)
 	{
@@ -517,7 +518,7 @@ bool WPS8Graph::readIBGF(RVNGInputStreamPtr input, WPSEntry const &entry)
 }
 
 // BDR/WBDR Code : read a BDR Code
-bool WPS8Graph::readBDR(RVNGInputStreamPtr input, WPSEntry const &entry)
+bool WPS8Graph::readBDR(WPXInputStreamPtr input, WPSEntry const &entry)
 {
 	typedef WPS8GraphInternal::Border Border;
 
@@ -540,7 +541,7 @@ bool WPS8Graph::readBDR(RVNGInputStreamPtr input, WPSEntry const &entry)
 	}
 
 	entry.setParsed();
-	input->seek(page_offset, librevenge::RVNG_SEEK_SET);
+	input->seek(page_offset, WPX_SEEK_SET);
 
 	Border border;
 	border.m_name = entry.extra();
@@ -623,9 +624,10 @@ bool WPS8Graph::readBDR(RVNGInputStreamPtr input, WPSEntry const &entry)
 		long debP = listPtrs[bd];
 		long endP = listPtrs[bd+1];
 
-		input->seek(debP, librevenge::RVNG_SEEK_SET);
+		input->seek(debP, WPX_SEEK_SET);
 		f.str("");
 		f << "BDR(" << bd << "):";
+		std::string fName = f.str();
 
 		if (debP+12 > endP || libwps::readU32(input) != 0x4154454d)   // META
 		{
@@ -657,7 +659,7 @@ bool WPS8Graph::readBDR(RVNGInputStreamPtr input, WPSEntry const &entry)
 #endif
 		}
 		else
-			input->seek(debPos+12, librevenge::RVNG_SEEK_SET);
+			input->seek(debPos+12, WPX_SEEK_SET);
 		if (input->tell() != endP) f << "###";
 		ascii().addPos(debP);
 		ascii().addNote(f.str().c_str());
@@ -681,7 +683,7 @@ bool WPS8Graph::readBDR(RVNGInputStreamPtr input, WPSEntry const &entry)
     see http://www.fileformat.info/format/wmf/egff.htm
     FIXME: we must also recognize the enhanced metafile format: EMF,
     if we want to read text which are created after 2007 */
-bool WPS8Graph::readMetaFile(RVNGInputStreamPtr input, long endPos, librevenge::RVNGBinaryData &pict)
+bool WPS8Graph::readMetaFile(WPXInputStreamPtr input, long endPos, WPXBinaryData &pict)
 {
 	long actualPos = input->tell();
 	pict.clear();
@@ -697,7 +699,7 @@ bool WPS8Graph::readMetaFile(RVNGInputStreamPtr input, long endPos, librevenge::
 #ifdef DEBUG
 	int vers = (int) libwps::read16(input);
 #else
-	input->seek(2, librevenge::RVNG_SEEK_CUR);
+	input->seek(2, WPX_SEEK_CUR);
 #endif
 
 	if (fType <= 0 || fType > 2 || hSize != 9)
@@ -716,7 +718,7 @@ bool WPS8Graph::readMetaFile(RVNGInputStreamPtr input, long endPos, librevenge::
 		return false;
 	}
 
-	input->seek(actualPos, librevenge::RVNG_SEEK_SET);
+	input->seek(actualPos, WPX_SEEK_SET);
 	if (!libwps::readData(input, (unsigned long)(endP-actualPos), pict)) return false;
 
 	ascii().skipZone(actualPos, endP-1);

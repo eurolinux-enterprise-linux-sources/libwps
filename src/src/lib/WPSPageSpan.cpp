@@ -21,10 +21,9 @@
  * For further information visit http://libwpd.sourceforge.net
  */
 
-#include <librevenge/librevenge.h>
+#include <libwpd/libwpd.h>
 
 #include "libwps_internal.h"
-#include "WKSContentListener.h"
 #include "WPSContentListener.h"
 #include "WPSSubDocument.h"
 
@@ -36,8 +35,8 @@ namespace WPSPageSpanInternal
 class HeaderFooter
 {
 public:
-	HeaderFooter(WPSPageSpan::HeaderFooterType const &headerFooterType, WPSPageSpan::HeaderFooterOccurrence const &occurrence, WPSSubDocumentPtr &subDoc)  :
-		m_type(headerFooterType), m_occurrence(occurrence), m_subDocument(subDoc)
+	HeaderFooter(const WPSPageSpan::HeaderFooterType headerFooterType, const WPSPageSpan::HeaderFooterOccurence occurence, WPSSubDocumentPtr &subDoc)  :
+		m_type(headerFooterType), m_occurence(occurence), m_subDocument(subDoc)
 	{
 	}
 
@@ -49,9 +48,9 @@ public:
 	{
 		return m_type;
 	}
-	WPSPageSpan::HeaderFooterOccurrence getOccurrence() const
+	WPSPageSpan::HeaderFooterOccurence getOccurence() const
 	{
-		return m_occurrence;
+		return m_occurence;
 	}
 	WPSSubDocumentPtr &getSubDocument()
 	{
@@ -64,7 +63,7 @@ public:
 	}
 private:
 	WPSPageSpan::HeaderFooterType m_type;
-	WPSPageSpan::HeaderFooterOccurrence m_occurrence;
+	WPSPageSpan::HeaderFooterOccurence m_occurence;
 	WPSSubDocumentPtr m_subDocument;
 };
 
@@ -73,7 +72,7 @@ bool HeaderFooter::operator==(shared_ptr<HeaderFooter> const &hF) const
 	if (!hF) return false;
 	if (m_type != hF.get()->m_type)
 		return false;
-	if (m_occurrence != hF.get()->m_occurrence)
+	if (m_occurence != hF.get()->m_occurence)
 		return false;
 	if (!m_subDocument)
 		return !hF.get()->m_subDocument;
@@ -106,16 +105,14 @@ WPSPageSpan::~WPSPageSpan()
 {
 }
 
-void WPSPageSpan::setHeaderFooter(const HeaderFooterType type, const HeaderFooterOccurrence occurrence,
+void WPSPageSpan::setHeaderFooter(const HeaderFooterType type, const HeaderFooterOccurence occurence,
                                   WPSSubDocumentPtr &subDocument)
 {
-	WPSPageSpanInternal::HeaderFooter headerFooter(type, occurrence, subDocument);
-	switch (occurrence)
+	WPSPageSpanInternal::HeaderFooter headerFooter(type, occurence, subDocument);
+	switch (occurence)
 	{
 	case NEVER:
 		_removeHeaderFooter(type, ALL);
-		WPS_FALLTHROUGH;
-	case FIRST:
 	case ALL:
 		_removeHeaderFooter(type, ODD);
 		_removeHeaderFooter(type, EVEN);
@@ -130,7 +127,7 @@ void WPSPageSpan::setHeaderFooter(const HeaderFooterType type, const HeaderFoote
 		break;
 	}
 
-	_setHeaderFooter(type, occurrence, subDocument);
+	_setHeaderFooter(type, occurence, subDocument);
 
 	bool containsHFLeft = _containsHeaderFooter(type, ODD);
 	bool containsHFRight = _containsHeaderFooter(type, EVEN);
@@ -150,7 +147,8 @@ void WPSPageSpan::setHeaderFooter(const HeaderFooterType type, const HeaderFoote
 	}
 }
 
-void WPSPageSpan::sendHeaderFooters(WPSContentListener *listener, librevenge::RVNGTextInterface *documentInterface)
+void WPSPageSpan::sendHeaderFooters(WPSContentListener *listener,
+                                    WPXDocumentInterface *documentInterface)
 {
 	if (!listener || !documentInterface)
 	{
@@ -164,20 +162,17 @@ void WPSPageSpan::sendHeaderFooters(WPSContentListener *listener, librevenge::RV
 		WPSPageSpanInternal::HeaderFooterPtr &hf = m_headerFooterList[i];
 		if (!hf) continue;
 
-		librevenge::RVNGPropertyList propList;
-		switch (hf->getOccurrence())
+		WPXPropertyList propList;
+		switch (hf->getOccurence())
 		{
-		case WPSPageSpan::FIRST:
-			propList.insert("librevenge:occurrence", "first");
-			break;
 		case WPSPageSpan::ODD:
-			propList.insert("librevenge:occurrence", "odd");
+			propList.insert("libwpd:occurence", "odd");
 			break;
 		case WPSPageSpan::EVEN:
-			propList.insert("librevenge:occurrence", "even");
+			propList.insert("libwpd:occurence", "even");
 			break;
 		case WPSPageSpan::ALL:
-			propList.insert("librevenge:occurrence", "all");
+			propList.insert("libwpd:occurence", "all");
 			break;
 		case WPSPageSpan::NEVER:
 		default:
@@ -206,14 +201,14 @@ void WPSPageSpan::sendHeaderFooters(WPSContentListener *listener, librevenge::RV
 		else
 			documentInterface->closeFooter();
 
-		WPS_DEBUG_MSG(("Header Footer Element: type: %i occurrence: %i\n",
-		               hf->getType(), hf->getOccurrence()));
+		WPS_DEBUG_MSG(("Header Footer Element: type: %i occurence: %i\n",
+		               hf->getType(), hf->getOccurence()));
 	}
 
 	if (!pageNumberInserted)
 	{
-		librevenge::RVNGPropertyList propList;
-		propList.insert("librevenge:occurrence", "all");
+		WPXPropertyList propList;
+		propList.insert("libwpd:occurence", "all");
 		if (m_pageNumberPosition >= TopLeft &&
 		        m_pageNumberPosition <= TopInsideLeftAndRight)
 		{
@@ -231,57 +226,9 @@ void WPSPageSpan::sendHeaderFooters(WPSContentListener *listener, librevenge::RV
 	}
 }
 
-void WPSPageSpan::sendHeaderFooters(WKSContentListener *listener, librevenge::RVNGSpreadsheetInterface *documentInterface)
+void WPSPageSpan::getPageProperty(WPXPropertyList &propList) const
 {
-	if (!listener || !documentInterface)
-	{
-		WPS_DEBUG_MSG(("WPSPageSpan::sendHeaderFooters: no listener or document interface\n"));
-		return;
-	}
-
-	for (size_t i = 0; i < m_headerFooterList.size(); i++)
-	{
-		WPSPageSpanInternal::HeaderFooterPtr &hf = m_headerFooterList[i];
-		if (!hf) continue;
-
-		librevenge::RVNGPropertyList propList;
-		switch (hf->getOccurrence())
-		{
-		case WPSPageSpan::FIRST:
-			propList.insert("librevenge:occurrence", "first");
-			break;
-		case WPSPageSpan::ODD:
-			propList.insert("librevenge:occurrence", "odd");
-			break;
-		case WPSPageSpan::EVEN:
-			propList.insert("librevenge:occurrence", "even");
-			break;
-		case WPSPageSpan::ALL:
-			propList.insert("librevenge:occurrence", "all");
-			break;
-		case WPSPageSpan::NEVER:
-		default:
-			break;
-		}
-		bool isHeader = hf->getType() == WPSPageSpan::HEADER;
-		if (isHeader)
-			documentInterface->openHeader(propList);
-		else
-			documentInterface->openFooter(propList);
-		listener->handleSubDocument(hf->getSubDocument(), libwps::DOC_HEADER_FOOTER);
-		if (isHeader)
-			documentInterface->closeHeader();
-		else
-			documentInterface->closeFooter();
-
-		WPS_DEBUG_MSG(("Header Footer Element: type: %i occurrence: %i\n",
-		               hf->getType(), hf->getOccurrence()));
-	}
-}
-
-void WPSPageSpan::getPageProperty(librevenge::RVNGPropertyList &propList) const
-{
-	propList.insert("librevenge:num-pages", getPageSpan());
+	propList.insert("libwpd:num-pages", getPageSpan());
 
 	propList.insert("fo:page-height", getFormLength());
 	propList.insert("fo:page-width", getFormWidth());
@@ -355,9 +302,9 @@ bool WPSPageSpan::operator==(shared_ptr<WPSPageSpan> const &page2) const
 	return true;
 }
 
-void WPSPageSpan::_insertPageNumberParagraph(librevenge::RVNGTextInterface *documentInterface)
+void WPSPageSpan::_insertPageNumberParagraph(WPXDocumentInterface *documentInterface)
 {
-	librevenge::RVNGPropertyList propList;
+	WPXPropertyList propList;
 	switch (m_pageNumberPosition)
 	{
 	case TopLeft:
@@ -384,18 +331,17 @@ void WPSPageSpan::_insertPageNumberParagraph(librevenge::RVNGTextInterface *docu
 		break;
 	}
 
-	documentInterface->openParagraph(propList);
+	documentInterface->openParagraph(propList, WPXPropertyListVector());
 
 	propList.clear();
 	propList.insert("style:font-name", m_pageNumberingFontName.cstr());
-	propList.insert("fo:font-size", m_pageNumberingFontSize, librevenge::RVNG_POINT);
+	propList.insert("fo:font-size", m_pageNumberingFontSize, WPX_POINT);
 	documentInterface->openSpan(propList);
 
 
 	propList.clear();
 	propList.insert("style:num-format", libwps::numberingTypeToString(m_pageNumberingType).c_str());
-	propList.insert("librevenge:field-format", "text:page-number");
-	documentInterface->insertField(propList);
+	documentInterface->insertField("text:page-number", propList);
 
 	propList.clear();
 	documentInterface->closeSpan();
@@ -404,34 +350,34 @@ void WPSPageSpan::_insertPageNumberParagraph(librevenge::RVNGTextInterface *docu
 }
 
 // -------------- manage header footer list ------------------
-void WPSPageSpan::_setHeaderFooter(HeaderFooterType type, HeaderFooterOccurrence occurrence, WPSSubDocumentPtr &doc)
+void WPSPageSpan::_setHeaderFooter(HeaderFooterType type, HeaderFooterOccurence occurence, WPSSubDocumentPtr &doc)
 {
-	if (occurrence == NEVER) return;
+	if (occurence == NEVER) return;
 
-	int pos = _getHeaderFooterPosition(type, occurrence);
+	int pos = _getHeaderFooterPosition(type, occurence);
 	if (pos == -1) return;
-	m_headerFooterList[size_t(pos)]=WPSPageSpanInternal::HeaderFooterPtr(new WPSPageSpanInternal::HeaderFooter(type, occurrence, doc));
+	m_headerFooterList[size_t(pos)]=WPSPageSpanInternal::HeaderFooterPtr(new WPSPageSpanInternal::HeaderFooter(type, occurence, doc));
 }
 
-void WPSPageSpan::_removeHeaderFooter(HeaderFooterType type, HeaderFooterOccurrence occurrence)
+void WPSPageSpan::_removeHeaderFooter(HeaderFooterType type, HeaderFooterOccurence occurence)
 {
-	int pos = _getHeaderFooterPosition(type, occurrence);
+	int pos = _getHeaderFooterPosition(type, occurence);
 	if (pos == -1) return;
 	m_headerFooterList[size_t(pos)].reset();
 }
 
-bool WPSPageSpan::_containsHeaderFooter(HeaderFooterType type, HeaderFooterOccurrence occurrence)
+bool WPSPageSpan::_containsHeaderFooter(HeaderFooterType type, HeaderFooterOccurence occurence)
 {
-	int pos = _getHeaderFooterPosition(type, occurrence);
+	int pos = _getHeaderFooterPosition(type, occurence);
 	if (pos == -1 || ! m_headerFooterList[size_t(pos)]) return false;
 	if (!m_headerFooterList[size_t(pos)]->getSubDocument()) return false;
 	return true;
 }
 
-int WPSPageSpan::_getHeaderFooterPosition(HeaderFooterType type, HeaderFooterOccurrence occurrence)
+int WPSPageSpan::_getHeaderFooterPosition(HeaderFooterType type, HeaderFooterOccurence occurence)
 {
-	int typePos = 0, occurrencePos = 0;
-	switch (type)
+	int typePos = 0, occurencePos = 0;
+	switch(type)
 	{
 	case HEADER:
 		typePos = 0;
@@ -443,26 +389,23 @@ int WPSPageSpan::_getHeaderFooterPosition(HeaderFooterType type, HeaderFooterOcc
 		WPS_DEBUG_MSG(("WPSPageSpan::getVectorPosition: unknown type\n"));
 		return -1;
 	}
-	switch (occurrence)
+	switch(occurence)
 	{
 	case ALL:
-		occurrencePos = 0;
+		occurencePos = 0;
 		break;
 	case ODD:
-		occurrencePos = 1;
+		occurencePos = 1;
 		break;
 	case EVEN:
-		occurrencePos = 2;
-		break;
-	case FIRST:
-		occurrencePos = 3;
+		occurencePos = 2;
 		break;
 	case NEVER:
 	default:
-		WPS_DEBUG_MSG(("WPSPageSpan::getVectorPosition: unknown occurrence\n"));
+		WPS_DEBUG_MSG(("WPSPageSpan::getVectorPosition: unknown occurence\n"));
 		return -1;
 	}
-	int res = typePos*4+occurrencePos;
+	int res = typePos*3+occurencePos;
 	if (res >= int(m_headerFooterList.size()))
 		m_headerFooterList.resize(size_t(res+1));
 	return res;

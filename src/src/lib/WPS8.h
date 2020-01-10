@@ -22,14 +22,18 @@
 #ifndef WPS8_H
 #define WPS8_H
 
-#include <deque>
 #include <vector>
 
-#include <librevenge/librevenge.h>
+#include <libwpd/libwpd.h>
 
 #include "libwps_internal.h"
 #include "WPSParser.h"
 
+class WPXString;
+class WPSContentListener;
+typedef WPSContentListener WPS8ContentListener;
+class WPSEntry;
+class WPSPosition;
 class WPSPageSpan;
 
 namespace WPS8ParserInternal
@@ -55,11 +59,11 @@ class WPS8Parser : public WPSParser
 
 public:
 	//! constructor
-	WPS8Parser(RVNGInputStreamPtr &input, WPSHeaderPtr &header);
+	WPS8Parser(WPXInputStreamPtr &input, WPSHeaderPtr &header);
 	//! destructor
 	~WPS8Parser();
 	//! called by WPSDocument to parse the file
-	void parse(librevenge::RVNGTextInterface *documentInterface);
+	void parse(WPXDocumentInterface *documentInterface);
 protected:
 	//! return true if the pos is in the file, update the file size if need
 	bool checkInFile(long pos);
@@ -67,9 +71,9 @@ protected:
 	//! adds a new page
 	void newPage(int number);
 	//! set the listener
-	void setListener(shared_ptr<WPSContentListener> listener);
+	void setListener(shared_ptr<WPS8ContentListener> listener);
 	/** creates the main listener */
-	shared_ptr<WPSContentListener> createListener(librevenge::RVNGTextInterface *interface);
+	shared_ptr<WPS8ContentListener> createListener(WPXDocumentInterface *interface);
 
 	/** tries to parse the main zone, ... */
 	bool createStructures();
@@ -89,7 +93,7 @@ protected:
 
 	//! creates a subdocument to send a textbox which correspond to the strsid text zone
 	void sendTextBox(WPSPosition const &pos, int strsid,
-	                 librevenge::RVNGPropertyList frameExtras=librevenge::RVNGPropertyList());
+	                 WPXPropertyList frameExtras=WPXPropertyList());
 
 	//! sends text corresponding to the entry to the listener (via WPS8Text)
 	void send(WPSEntry const &entry);
@@ -139,8 +143,6 @@ protected:
 	/** \brief reads the FRAM zone: ie a zone which can contains textbox, picture, ...
 		and have some borders */
 	bool readFRAM(WPSEntry const &entry);
-	/** \brief reads the FRCD zone: ie a zone which can contains mailmerge data ? */
-	bool readFRCD(WPSEntry const &entry);
 
 	/** \brief parses a SYID zone
 	 *
@@ -154,9 +156,9 @@ protected:
 	bool readWNPR(WPSEntry const &entry);
 
 	//! finds the structures of the Ole zone "SPELLING"
-	bool readSPELLING(RVNGInputStreamPtr input, std::string const &oleName);
+	bool readSPELLING(WPXInputStreamPtr input, std::string const &oleName);
 
-	shared_ptr<WPSContentListener> m_listener; /* the listener (if set)*/
+	shared_ptr<WPS8ContentListener> m_listener; /* the listener (if set)*/
 	//! the graph parser
 	shared_ptr<WPS8Graph> m_graphParser;
 	//! the table parser
@@ -165,9 +167,6 @@ protected:
 	shared_ptr<WPS8Text> m_textParser;
 	//! the internal state
 	shared_ptr<WPS8ParserInternal::State> m_state;
-
-private:
-	std::deque<int> m_sendingTables;
 };
 
 #endif /* WPS8_H */

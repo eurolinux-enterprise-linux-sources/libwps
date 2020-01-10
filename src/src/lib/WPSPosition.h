@@ -28,7 +28,7 @@
 
 #include <ostream>
 
-#include <librevenge/librevenge.h>
+#include <libwpd/libwpd.h>
 
 #include "libwps_internal.h"
 
@@ -40,7 +40,7 @@ class WPSPosition
 {
 public:
 	//! a list of enum used to defined the anchor
-	enum AnchorTo { Char, CharBaseLine, Paragraph, ParagraphContent, Page, PageContent };
+	enum AnchorTo { Char, CharBaseLine, Paragraph, Page };
 	//! an enum used to define the wrapping
 	enum Wrapping { WNone, WDynamic, WRunThrough }; // Add something for background ?
 	//! an enum used to define the relative X position
@@ -50,30 +50,29 @@ public:
 
 public:
 	//! constructor
-	WPSPosition(Vec2f const &orig=Vec2f(), Vec2f const &sz=Vec2f(), librevenge::RVNGUnit unt=librevenge::RVNG_INCH):
+	WPSPosition(Vec2f const &orig=Vec2f(), Vec2f const &sz=Vec2f(), WPXUnit unt=WPX_INCH):
 		m_anchorTo(Char), m_xPos(XLeft), m_yPos(YTop), m_wrapping(WNone),
 		m_page(0), m_orig(orig), m_size(sz), m_naturalSize(), m_unit(unt), m_order(0) {}
-	//! destructor
-	~WPSPosition() {}
+
+	virtual ~WPSPosition() {}
 	//! operator<<
 	friend  std::ostream &operator<<(std::ostream &o, WPSPosition const &pos)
 	{
 		Vec2f dest(pos.m_orig+pos.m_size);
 		o << "Pos=" << pos.m_orig << "x" << dest;
-		switch (pos.m_unit)
+		switch(pos.m_unit)
 		{
-		case librevenge::RVNG_INCH:
+		case WPX_INCH:
 			o << "(inch)";
 			break;
-		case librevenge::RVNG_POINT:
+		case WPX_POINT:
 			o << "(pt)";
 			break;
-		case librevenge::RVNG_TWIP:
+		case WPX_TWIP:
 			o << "(tw)";
 			break;
-		case librevenge::RVNG_PERCENT:
-		case librevenge::RVNG_GENERIC:
-		case librevenge::RVNG_UNIT_ERROR:
+		case WPX_PERCENT:
+		case WPX_GENERIC:
 		default:
 			break;
 		}
@@ -117,50 +116,48 @@ public:
 		return m_naturalSize;
 	}
 	//! returns the unit
-	librevenge::RVNGUnit unit() const
+	WPXUnit unit() const
 	{
 		return m_unit;
 	}
 	//! returns a float which can be used to convert between to unit
-	static float getScaleFactor(librevenge::RVNGUnit orig, librevenge::RVNGUnit dest)
+	static float getScaleFactor(WPXUnit orig, WPXUnit dest)
 	{
 		float actSc = 1.0, newSc = 1.0;
-		switch (orig)
+		switch(orig)
 		{
-		case librevenge::RVNG_TWIP:
+		case WPX_TWIP:
 			break;
-		case librevenge::RVNG_POINT:
+		case WPX_POINT:
 			actSc=20;
 			break;
-		case librevenge::RVNG_INCH:
+		case WPX_INCH:
 			actSc = 1440;
 			break;
-		case librevenge::RVNG_PERCENT:
-		case librevenge::RVNG_GENERIC:
-		case librevenge::RVNG_UNIT_ERROR:
+		case WPX_PERCENT:
+		case WPX_GENERIC:
 		default:
 			WPS_DEBUG_MSG(("WPSPosition::getScaleFactor %d unit must not appear\n", int(orig)));
 		}
-		switch (dest)
+		switch(dest)
 		{
-		case librevenge::RVNG_TWIP:
+		case WPX_TWIP:
 			break;
-		case librevenge::RVNG_POINT:
+		case WPX_POINT:
 			newSc=20;
 			break;
-		case librevenge::RVNG_INCH:
+		case WPX_INCH:
 			newSc = 1440;
 			break;
-		case librevenge::RVNG_PERCENT:
-		case librevenge::RVNG_GENERIC:
-		case librevenge::RVNG_UNIT_ERROR:
+		case WPX_PERCENT:
+		case WPX_GENERIC:
 		default:
 			WPS_DEBUG_MSG(("WPSPosition::getScaleFactor %d unit must not appear\n", int(dest)));
 		}
 		return actSc/newSc;
 	}
 	//! returns a float which can be used to scale some data in object unit
-	float getInvUnitScale(librevenge::RVNGUnit unt) const
+	float getInvUnitScale(WPXUnit unt) const
 	{
 		return getScaleFactor(unt, m_unit);
 	}
@@ -186,7 +183,7 @@ public:
 		m_naturalSize = natSize;
 	}
 	//! sets the dimension unit
-	void setUnit(librevenge::RVNGUnit unt)
+	void setUnit(WPXUnit unt)
 	{
 		m_unit = unt;
 	}
@@ -253,7 +250,7 @@ protected:
 	int m_page;
 	Vec2f m_orig /** the origin position in a page */, m_size /* the size of the data*/, m_naturalSize /** the natural size of the data (if known) */;
 	//! the unit used in \a orig and in \a m_size. Default: in inches
-	librevenge::RVNGUnit m_unit;
+	WPXUnit m_unit;
 	//! background/foward order
 	mutable int m_order;
 };

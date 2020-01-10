@@ -26,8 +26,12 @@
 #include <vector>
 #include "libwps_internal.h"
 
-class WKSContentListener;
+class WPXPropertyList;
+class WPXDocumentProperty;
 class WPSContentListener;
+
+class WPSSubDocument;
+typedef shared_ptr<WPSSubDocument> WPSSubDocumentPtr;
 
 namespace WPSPageSpanInternal
 {
@@ -37,20 +41,19 @@ typedef shared_ptr<HeaderFooter> HeaderFooterPtr;
 
 class WPSPageSpan
 {
+	friend class WPSContentListener;
 public:
 	enum FormOrientation { PORTRAIT, LANDSCAPE };
 
 	enum HeaderFooterType { HEADER, FOOTER };
-	enum HeaderFooterOccurrence { ODD, EVEN, ALL, FIRST, NEVER };
+	enum HeaderFooterOccurence { ODD, EVEN, ALL, NEVER };
 
 	enum PageNumberPosition { None = 0, TopLeft, TopCenter, TopRight, TopLeftAndRight, TopInsideLeftAndRight,
 	                          BottomLeft, BottomCenter, BottomRight, BottomLeftAndRight, BottomInsideLeftAndRight
 	                        };
 public:
-	//! constructor
 	WPSPageSpan();
-	//! destructor
-	~WPSPageSpan();
+	virtual ~WPSPageSpan();
 
 	double getFormLength() const
 	{
@@ -96,7 +99,7 @@ public:
 	{
 		return m_pageNumberingFontSize;
 	}
-	librevenge::RVNGString getPageNumberingFontName() const
+	WPXString getPageNumberingFontName() const
 	{
 		return m_pageNumberingFontName;
 	}
@@ -109,7 +112,7 @@ public:
 		return m_headerFooterList;
 	}
 
-	void setHeaderFooter(const HeaderFooterType type, const HeaderFooterOccurrence occurrence,
+	void setHeaderFooter(const HeaderFooterType type, const HeaderFooterOccurence occurence,
 	                     WPSSubDocumentPtr &subDocument);
 	void setFormLength(const double formLength)
 	{
@@ -155,7 +158,7 @@ public:
 	{
 		m_pageNumberingFontSize = pageNumberingFontSize;
 	}
-	void setPageNumberingFontName(const librevenge::RVNGString &pageNumberingFontName)
+	void setPageNumberingFontName(const WPXString &pageNumberingFontName)
 	{
 		m_pageNumberingFontName = pageNumberingFontName;
 	}
@@ -169,20 +172,20 @@ public:
 	{
 		return !operator==(pageSpan);
 	}
-
-	// interface with the listeners
-	void getPageProperty(librevenge::RVNGPropertyList &pList) const;
-	void sendHeaderFooters(WPSContentListener *listener, librevenge::RVNGTextInterface *documentInterface);
-	void sendHeaderFooters(WKSContentListener *listener, librevenge::RVNGSpreadsheetInterface *documentInterface);
+protected:
+	// interface with WPSContentListener
+	void getPageProperty(WPXPropertyList &pList) const;
+	void sendHeaderFooters(WPSContentListener *listener,
+	                       WPXDocumentInterface *documentInterface);
 
 protected:
 
-	int _getHeaderFooterPosition(HeaderFooterType type, HeaderFooterOccurrence occurrence);
-	void _setHeaderFooter(HeaderFooterType type, HeaderFooterOccurrence occurrence, WPSSubDocumentPtr &doc);
-	void _removeHeaderFooter(HeaderFooterType type, HeaderFooterOccurrence occurrence);
-	bool _containsHeaderFooter(HeaderFooterType type, HeaderFooterOccurrence occurrence);
+	int _getHeaderFooterPosition(HeaderFooterType type, HeaderFooterOccurence occurence);
+	void _setHeaderFooter(HeaderFooterType type, HeaderFooterOccurence occurence, WPSSubDocumentPtr &doc);
+	void _removeHeaderFooter(HeaderFooterType type, HeaderFooterOccurence occurence);
+	bool _containsHeaderFooter(HeaderFooterType type, HeaderFooterOccurence occurence);
 
-	void _insertPageNumberParagraph(librevenge::RVNGTextInterface *documentInterface);
+	void _insertPageNumberParagraph(WPXDocumentInterface *documentInterface);
 private:
 	double m_formLength, m_formWidth;
 	FormOrientation m_formOrientation;
@@ -191,7 +194,7 @@ private:
 	PageNumberPosition m_pageNumberPosition;
 	int m_pageNumber;
 	libwps::NumberingType m_pageNumberingType;
-	librevenge::RVNGString m_pageNumberingFontName;
+	WPXString m_pageNumberingFontName;
 	double m_pageNumberingFontSize;
 	std::vector<WPSPageSpanInternal::HeaderFooterPtr> m_headerFooterList;
 

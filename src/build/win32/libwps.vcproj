@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..\inc,$(LIBREVENGE_INCLUDE_DIR),$(BOOST_INCLUDE_DIR)"
+				AdditionalIncludeDirectories="..\..\inc,$(LIBWPD_INCLUDE_DIR),$(BOOST_INCLUDE_DIR)"
 				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -69,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="Release\lib\libwps-0.3.lib"
+				OutputFile="Release\lib\libwps-0.2.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -116,7 +116,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\inc,$(LIBREVENGE_INCLUDE_DIR),$(BOOST_INCLUDE_DIR)"
+				AdditionalIncludeDirectories="..\..\inc,$(LIBWPD_INCLUDE_DIR),$(BOOST_INCLUDE_DIR)"
 				PreprocessorDefinitions="_DEBUG;DEBUG;WIN32;_LIB;_CRT_SECURE_NO_WARNINGS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -143,7 +143,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="Debug\lib\libwps-0.3.lib"
+				OutputFile="Debug\lib\libwps-0.2.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -194,286 +194,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\lib\libwps_tools_win.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\DosWord.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\Lotus.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\LotusGraph.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\LotusSpreadsheet.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\LotusStyleManager.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\MSWrite.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\Quattro.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\QuattroSpreadsheet.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKS4.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKS4Format.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKS4Spreadsheet.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKSContentListener.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKSParser.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKSSubDocument.cpp"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
@@ -753,66 +473,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\WPSFont.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WPSGraphicShape.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WPSGraphicStyle.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\..\src\lib\WPSHeader.cpp"
 				>
 				<FileConfiguration
@@ -853,7 +513,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\WPSOLE1Parser.cpp"
+				RelativePath="..\..\src\lib\WPSOLEParser.cpp"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
@@ -873,7 +533,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\WPSOLEParser.cpp"
+				RelativePath="..\..\src\lib\WPSOLEStream.cpp"
 				>
 				<FileConfiguration
 					Name="Release|Win32"
@@ -953,46 +613,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\WPSStream.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WPSStringStream.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\..\src\lib\WPSSubDocument.cpp"
 				>
 				<FileConfiguration
@@ -1052,26 +672,6 @@
 					/>
 				</FileConfiguration>
 			</File>
-			<File
-				RelativePath="..\..\src\lib\WPSTextSubDocument.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -1087,62 +687,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\lib\libwps_tools_win.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\DosWord.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\Lotus.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\LotusGraph.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\LotusSpreadsheet.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\LotusStyleManager.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\MSWrite.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\Quattro.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\QuattroSpreadsheet.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKS4.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKS4Format.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKS4Spreadsheet.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKSContentListener.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKSParser.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WKSSubDocument.h"
 				>
 			</File>
 			<File
@@ -1202,18 +746,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\WPSFont.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WPSGraphicShape.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WPSGraphicStyle.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\lib\WPSHeader.h"
 				>
 			</File>
@@ -1222,11 +754,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\WPSOLE1Parser.h"
+				RelativePath="..\..\src\lib\WPSOLEParser.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\WPSOLEParser.h"
+				RelativePath="..\..\src\lib\WPSOLEStream.h"
 				>
 			</File>
 			<File
@@ -1246,14 +778,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\lib\WPSStream.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WPSStringStream.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\lib\WPSSubDocument.h"
 				>
 			</File>
@@ -1263,10 +787,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\lib\WPSTextParser.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\lib\WPSTextSubDocument.h"
 				>
 			</File>
 		</Filter>

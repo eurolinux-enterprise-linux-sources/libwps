@@ -35,7 +35,7 @@
 ////////////////////////////////////////////////////////////
 // Constructor
 ////////////////////////////////////////////////////////////
-WPSTextParser::WPSTextParser(WPSParser &parser, RVNGInputStreamPtr &input) :
+WPSTextParser::WPSTextParser(WPSParser &parser, WPXInputStreamPtr &input) :
 	m_version(0), m_input(input),  m_mainParser(parser),
 	m_textPositions(), m_FODList(), m_asciiFile(parser.ascii())
 {
@@ -68,7 +68,7 @@ bool WPSTextParser::readFDP(WPSEntry const &entry,
                             std::vector<DataFOD> &fods,
                             WPSTextParser::FDPParser parser)
 {
-	RVNGInputStreamPtr input = getInput();
+	WPXInputStreamPtr input = getInput();
 	if (entry.length() <= 0 || entry.begin() <= 0)
 	{
 		WPS_DEBUG_MSG(("WPSTextParser::readFDP: warning: FDP entry unintialized\n"));
@@ -87,7 +87,7 @@ bool WPSTextParser::readFDP(WPSEntry const &entry,
 	if (length < headerSize)
 	{
 		WPS_DEBUG_MSG(("WPSTextParser::readFDP: warning: FDP offset=0x%lx, length=0x%lx\n",
-		               (unsigned long) page_offset, (unsigned long) length));
+		               page_offset, length));
 		return false;
 	}
 
@@ -95,19 +95,19 @@ bool WPSTextParser::readFDP(WPSEntry const &entry,
 	if (smallFDP)
 	{
 		endPage--;
-		input->seek(endPage, librevenge::RVNG_SEEK_SET);
+		input->seek(endPage, WPX_SEEK_SET);
 	}
 	else
-		input->seek(page_offset, librevenge::RVNG_SEEK_SET);
+		input->seek(page_offset, WPX_SEEK_SET);
 	uint16_t cfod = deplSize == 1 ? (uint16_t) libwps::readU8(m_input) : libwps::readU16(m_input);
 
 	f << "FDP: N="<<(int) cfod;
-	if (smallFDP) input->seek(page_offset, librevenge::RVNG_SEEK_SET);
+	if (smallFDP) input->seek(page_offset, WPX_SEEK_SET);
 	else f << ", unk=" << libwps::read16(m_input);
 
 	if (headerSize+(4+deplSize)*static_cast<long>(cfod) > length)
 	{
-		WPS_DEBUG_MSG(("WPSTextParser::readFDP: error: cfod = %i (0x%X)\n", cfod, (unsigned) cfod));
+		WPS_DEBUG_MSG(("WPSTextParser::readFDP: error: cfod = %i (0x%X)\n", cfod, cfod));
 		return false;
 	}
 
@@ -126,11 +126,11 @@ bool WPSTextParser::readFDP(WPSEntry const &entry,
 
 	/* Read array of fcLim of FODs.  The fcLim refers to the offset of the
 	   last character covered by the formatting. */
-	for (int i = 0; i <= cfod; ++i)
+	for (int i = 0; i <= cfod; i++)
 	{
 		DataFOD fod;
 		fod.m_type = type;
-		fod.m_pos = (long) libwps::readU32(m_input);
+		fod.m_pos = libwps::readU32(m_input);
 		if (fod.m_pos == 0) fod.m_pos=m_textPositions.begin();
 
 		/* check that fcLim is not too large */
@@ -161,26 +161,26 @@ bool WPSTextParser::readFDP(WPSEntry const &entry,
 	/* Read array of bfprop of FODs.  The bfprop is the offset where
 	   the FPROP is located. */
 	f << ", Tpos:defP=(";
-	for (fods_iter = fods.begin() + firstFod; fods_iter!= fods.end(); ++fods_iter)
+	for (fods_iter = fods.begin() + firstFod; fods_iter!= fods.end(); fods_iter++)
 	{
 		unsigned depl = deplSize == 1 ? libwps::readU8(m_input) : libwps::readU16(m_input);
 		/* check size of bfprop  */
 		if ((depl < unsigned(headerSize+(4+deplSize)*cfod) && depl > 0) ||
-		        page_offset+long(depl)  > endPage)
+		        long(page_offset+depl)  > endPage)
 		{
 			WPS_DEBUG_MSG(("WPSTextParser::readFDP: error: pos of bfprop is bad "
-			               "%u (0x%X)\n", depl, depl));
+			               "%i (0x%X)\n", depl, depl));
 			return false;
 		}
 
 		if (depl)
-			(*fods_iter).m_defPos = long(depl) + page_offset;
+			(*fods_iter).m_defPos = depl + page_offset;
 	}
 	ascii().addPos(input->tell());
 
 	std::map<long,int> mapPtr;
 	bool smallSzInProp = smallFDP;
-	for (fods_iter = fods.begin() + firstFod; fods_iter!= fods.end(); ++fods_iter)
+	for (fods_iter = fods.begin() + firstFod; fods_iter!= fods.end(); fods_iter++)
 	{
 		long pos = (*fods_iter).m_defPos;
 		f << std::hex << (*fods_iter).m_pos << std::dec << ":";
@@ -198,12 +198,12 @@ bool WPSTextParser::readFDP(WPSEntry const &entry,
 			continue;
 		}
 
-		input->seek(pos, librevenge::RVNG_SEEK_SET);
+		input->seek(pos, WPX_SEEK_SET);
 		int szProp = smallSzInProp ? libwps::readU8(m_input) : libwps::readU16(m_input);
 		if (smallSzInProp) szProp++;
 		if (szProp == 0)
 		{
-			WPS_DEBUG_MSG(("WPSTextParser::readFDP: error: 0 == szProp at file offset 0x%lx\n", (unsigned long)(input->tell()-1)));
+			WPS_DEBUG_MSG(("WPSTextParser::readFDP: error: 0 == szProp at file offset 0x%lx\n", (input->tell())-1));
 			return false;
 		}
 		long endPos = pos+szProp;
@@ -215,7 +215,7 @@ bool WPSTextParser::readFDP(WPSEntry const &entry,
 
 		int id;
 		std::string mess;
-		if (parser &&(this->*parser)(endPos, id, mess))
+		if (parser &&(this->*parser) (endPos, id, mess) )
 		{
 			(*fods_iter).m_id = mapPtr[pos] = id;
 
@@ -240,7 +240,7 @@ bool WPSTextParser::readFDP(WPSEntry const &entry,
 	ascii().addNote(f.str().c_str());
 
 	/* go to end of page */
-	input->seek(endPage, librevenge::RVNG_SEEK_SET);
+	input->seek(endPage, WPX_SEEK_SET);
 
 	return m_textPositions.end() > lastReadPos;
 }

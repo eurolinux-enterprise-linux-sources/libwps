@@ -1,8 +1,6 @@
-if BUILD_TOOLS
-
 bin_PROGRAMS = wps2raw
 
-AM_CXXFLAGS = -I$(top_srcdir)/inc -I../helper $(REVENGE_CFLAGS) $(REVENGE_GENERATORS_CFLAGS) $(REVENGE_STREAM_CFLAGS) $(DEBUG_CXXFLAGS)
+AM_CXXFLAGS = -I$(top_srcdir)/inc $(WPD_CFLAGS) $(DEBUG_CXXFLAGS)
 
 wps2raw_DEPENDENCIES = @WPS2RAW_WIN32_RESOURCE@
 
@@ -10,18 +8,20 @@ if STATIC_TOOLS
 
 wps2raw_LDADD = \
 	../../lib/@WPS_OBJDIR@/libwps-@WPS_MAJOR_VERSION@.@WPS_MINOR_VERSION@.a \
-	../helper/@WPS_OBJDIR@/libconvHelper.a $(REVENGE_LIBS) $(REVENGE_GENERATORS_LIBS) $(REVENGE_STREAM_LIBS) @WPS2RAW_WIN32_RESOURCE@
+	$(WPD_LIBS) @WPS2RAW_WIN32_RESOURCE@
 wps2raw_LDFLAGS = -all-static
 
 else	
 
 wps2raw_LDADD = \
 	../../lib/libwps-@WPS_MAJOR_VERSION@.@WPS_MINOR_VERSION@.la \
-	../helper/libconvHelper.la $(REVENGE_LIBS) $(REVENGE_GENERATORS_LIBS) $(REVENGE_STREAM_LIBS)  @WPS2RAW_WIN32_RESOURCE@
+	$(WPD_LIBS) @WPS2RAW_WIN32_RESOURCE@
 
 endif
 
 wps2raw_SOURCES = \
+	RawDocumentGenerator.cpp	 \
+	RawDocumentGenerator.h	 \
 	wps2raw.cpp
 
 if OS_WIN32
@@ -38,5 +38,4 @@ EXTRA_DIST = \
 # These may be in the builddir too
 BUILD_EXTRA_DIST = \
 	wps2raw.rc	 
-
-endif
+ 

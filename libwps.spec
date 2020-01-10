@@ -1,26 +1,25 @@
-%global apiversion 0.4
+%global apiversion 0.2
 
 Name:		libwps
-Version:	0.4.7
-Release:	1%{?dist}
-Summary:	A library for import of Microsoft Works documents
+Version:	0.2.9
+Release:	6%{?dist}
+Summary:	Library for reading and converting Microsoft Works word processor documents
 
+Group:		System Environment/Libraries
 License:	LGPLv2+ or MPLv2.0
 URL:		http://libwps.sourceforge.net/
 Source0:	http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.xz
 
+BuildRequires:	boost-devel
 BuildRequires:	doxygen
-BuildRequires:	help2man
-BuildRequires:	pkgconfig(librevenge-0.0)
+BuildRequires:	libwpd-devel
 
 %description
-%{name} is a library for import of Microsoft Works text documents,
-spreadsheets and (in a limited way) databases. Full list of supported
-formats is available at
-https://sourceforge.net/p/libwps/wiki/Home/#recognized-formats .
+Library that handles Microsoft Works documents.
 
 %package devel
 Summary:	Development files for %{name}
+Group:		Development/Libraries
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 
 %description devel
@@ -28,86 +27,64 @@ The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
 %package tools
-Summary:	Tools to transform Microsoft Works documents into other formats
+Summary:	Tools to transform Works documents into other formats
+Group:		Applications/Publishing
 Requires:	%{name}%{?_isa} = %{version}-%{release}
 
 %description tools
-Tools to transform Microsoft Works documents into other formats.
-Currently supported: CSV, HTML, raw, text
+Tools to transform Works documents into other formats.
+Currently supported: html, raw, text
 
 %package doc
 Summary:	Documentation of %{name} API
+Group:		Documentation
 BuildArch:	noarch
 
 %description doc
 The %{name}-doc package contains documentation files for %{name}
 
 %prep
-%autosetup -p1
+%setup -q
+# Prevent autotools from being rerun
+touch -r aclocal.m4 configure configure.in
 
 %build
-%configure --disable-silent-rules --disable-static --disable-werror --with-sharedptr=c++11
+%configure --disable-silent-rules --disable-static --disable-werror
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags}
 
 %install
 make install INSTALL="install -p" DESTDIR="%{buildroot}" 
-rm -f %{buildroot}%{_libdir}/*.la
+
+find %{buildroot} -name '*.la' -exec rm -f {} ';'
+
 # we install API docs directly from build
 rm -rf %{buildroot}%{_defaultdocdir}/%{name}
-
-export LD_LIBRARY_PATH=%{buildroot}/%{_libdir}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
-for tool in wks2csv wks2raw wks2text wps2html wps2raw wps2text; do
-    help2man -S '%{name} %{version}' -N -o ${tool}.1 %{buildroot}%{_bindir}/${tool}
-done
-install -m 0755 -d %{buildroot}/%{_mandir}/man1
-install -m 0644 wks2*.1 wps2*.1 %{buildroot}/%{_mandir}/man1
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
 
 %files
-%doc CREDITS NEWS README
-%license COPYING.LGPL COPYING.MPL
+%doc COPYING.LGPL COPYING.MPL CREDITS NEWS README
 %{_libdir}/%{name}-%{apiversion}.so.*
 
 %files devel
+%doc HACKING
 %{_includedir}/%{name}-%{apiversion}
 %{_libdir}/%{name}-%{apiversion}.so
 %{_libdir}/pkgconfig/%{name}-%{apiversion}.pc
 
 %files tools
-%{_bindir}/wks2csv
-%{_bindir}/wks2raw
-%{_bindir}/wks2text
 %{_bindir}/wps2html
 %{_bindir}/wps2raw
 %{_bindir}/wps2text
-%{_mandir}/man1/wks2csv.1*
-%{_mandir}/man1/wks2raw.1*
-%{_mandir}/man1/wks2text.1*
-%{_mandir}/man1/wps2html.1*
-%{_mandir}/man1/wps2raw.1*
-%{_mandir}/man1/wps2text.1*
 
 %files doc
-%license COPYING.LGPL COPYING.MPL
+%doc COPYING.LGPL COPYING.MPL
 %doc docs/doxygen/html
 
 %changelog
-* Mon Sep 18 2017 David Tardon <dtardon@redhat.com> - 0.4.7-1
-- Resolves: rhbz#1477108 rebase to 0.4.7
-
-* Fri Apr 17 2015 David Tardon <dtardon@redhat.com> - 0.3.1-1
-- Resolves: rhbz#1207762 rebase to 0.3.1
-
-* Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 0.2.9-8
-- Mass rebuild 2014-01-24
-
-* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 0.2.9-7
-- Mass rebuild 2013-12-27
-
 * Mon Sep 09 2013 David Tardon <dtardon@redhat.com> - 0.2.9-6
 - Resolves: rhbz#1005711 do not compile in C++11 mode
 

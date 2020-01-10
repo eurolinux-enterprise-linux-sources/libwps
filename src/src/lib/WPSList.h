@@ -29,8 +29,11 @@
 #include <iostream>
 #include <vector>
 
-#include <librevenge/librevenge.h>
+#include <libwpd/libwpd.h>
 #include "libwps_internal.h"
+
+class WPXPropertyList;
+class WPXDocumentInterface;
 
 /** a small structure used to store the informations about a list */
 class WPSList
@@ -55,7 +58,7 @@ public:
 			return m_type !=libwps::NONE && m_type != libwps::BULLET;
 		}
 		/** add the information of this level in the propList */
-		void addTo(librevenge::RVNGPropertyList &propList, int startVal) const;
+		void addTo(WPXPropertyList &propList, int startVal) const;
 
 		/** returns true, if addTo has been called */
 		bool isSendToInterface() const
@@ -89,18 +92,18 @@ public:
 		int m_startValue;
 		/** the type of the level */
 		libwps::NumberingType m_type;
-		librevenge::RVNGString m_prefix /** string which preceedes the number if we have an ordered level*/,
-		           m_suffix/** string which follows the number if we have an ordered level*/,
-		           m_bullet /** the bullet if we have an bullet level */;
+		WPXString m_prefix /** string which preceedes the number if we have an ordered level*/,
+		          m_suffix/** string which follows the number if we have an ordered level*/,
+		          m_bullet /** the bullet if we have an bullet level */;
 
 	protected:
-		/** true if it is already send to librevenge::RVNGTextInterface */
+		/** true if it is already send to WPXDocumentInterface */
 		mutable bool m_sendToInterface;
 	};
 
 	/** default constructor */
 	WPSList() : m_levels(), m_actLevel(-1), m_actualIndices(), m_nextIndices(),
-		m_id(-1), m_previousId(-1) {}
+		m_id(-1), m_previousId (-1) {}
 
 	/** returns the list id */
 	int getId() const
@@ -141,8 +144,8 @@ public:
 	/** returns true of the level must be send to the document interface */
 	bool mustSendLevel(int level) const;
 
-	/** add level definition to propList */
-	void addLevelTo(int level, librevenge::RVNGPropertyList &propList) const;
+	/** send the list information to the document interface */
+	void sendTo(WPXDocumentInterface &docInterface, int level) const;
 
 protected:
 	std::vector<Level> m_levels;

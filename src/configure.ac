@@ -6,8 +6,8 @@ AC_PREREQ([2.65])
 # Version informations
 # ====================
 m4_define([libwps_version_major],[0])
-m4_define([libwps_version_minor],[4])
-m4_define([libwps_version_micro],[7])
+m4_define([libwps_version_minor],[2])
+m4_define([libwps_version_micro],[9])
 m4_define([libwps_version],[libwps_version_major.libwps_version_minor.libwps_version_micro])
 
 # =============
@@ -35,6 +35,16 @@ AC_CANONICAL_HOST
 
 PKG_PROG_PKG_CONFIG([0.20])
 
+# ====================
+# Find additional apps
+# ====================
+PKG_CHECK_MODULES([WPD],[
+    libwpd-0.9
+    libwpd-stream-0.9
+])
+AC_SUBST(WPD_CFLAGS)
+AC_SUBST(WPD_LIBS)
+
 # =================================
 # Libtool/Version Makefile settings
 # =================================
@@ -42,11 +52,11 @@ AC_SUBST(WPS_MAJOR_VERSION, [libwps_version_major])
 AC_SUBST(WPS_MINOR_VERSION, [libwps_version_minor])
 AC_SUBST(WPS_MICRO_VERSION, [libwps_version_micro])
 AC_SUBST(WPS_VERSION, [libwps_version])
-AC_SUBST(WPS_OBJDIR, [$objdir])
 # AC_SUBST(LT_RELEASE, [libwps_version_major.libwps_version_minor])
 LT_CURRENT=`expr 100 '*' libwps_version_major + libwps_version_minor`
 # For 1.0.0 comment the first line and uncomment the second
 LT_AGE=0
+# LT_AGE=libwpd_version_minor
 AC_SUBST(LT_CURRENT)
 AC_SUBST(LT_REVISION, [libwps_version_micro])
 AC_SUBST(LT_AGE)
@@ -60,33 +70,24 @@ AS_CASE([$host],
 		native_win32=yes
 		LIBWPS_WIN32_RESOURCE=libwps-win32res.lo
 		LIBWPS_STREAM_WIN32_RESOURCE=libwps-stream-win32res.lo
-		WKS2CSV_WIN32_RESOURCE=wks2csv-win32res.lo
-		WKS2RAW_WIN32_RESOURCE=wks2raw-win32res.lo
-		WKS2TEXT_WIN32_RESOURCE=wks2text-win32res.lo
 		WPS2HTML_WIN32_RESOURCE=wps2html-win32res.lo
-		WPS2RAW_WIN32_RESOURCE=wps2raw-win32res.lo
 		WPS2TEXT_WIN32_RESOURCE=wps2text-win32res.lo
+		WPS2RAW_WIN32_RESOURCE=wps2raw-win32res.lo
 	], [
 		native_win32=no
 		LIBWPS_WIN32_RESOURCE=
 		LIBWPS_STREAM_WIN32_RESOURCE=
-		WKS2CSV_WIN32_RESOURCE=
-		WKS2RAW_WIN32_RESOURCE=
-		WKS2TEXT_WIN32_RESOURCE=
 		WPS2HTML_WIN32_RESOURCE=
-		WPS2RAW_WIN32_RESOURCE=
 		WPS2TEXT_WIN32_RESOURCE=
+		WPS2RAW_WIN32_RESOURCE=
 	]
 )
 AM_CONDITIONAL(OS_WIN32, [test "x$native_win32" = "xyes"])
 AC_SUBST(LIBWPS_WIN32_RESOURCE)
 AC_SUBST(LIBWPS_STREAM_WIN32_RESOURCE)
-AC_SUBST(WKS2CSV_WIN32_RESOURCE)
-AC_SUBST(WKS2RAW_WIN32_RESOURCE)
-AC_SUBST(WKS2TEXT_WIN32_RESOURCE)
 AC_SUBST(WPS2HTML_WIN32_RESOURCE)
-AC_SUBST(WPS2RAW_WIN32_RESOURCE)
 AC_SUBST(WPS2TEXT_WIN32_RESOURCE)
+AC_SUBST(WPS2RAW_WIN32_RESOURCE)
 
 AC_MSG_CHECKING([for Win32 platform in general])
 AS_CASE([$host],
@@ -95,25 +96,6 @@ AS_CASE([$host],
 )
 AC_MSG_RESULT([$platform_win32])
 AM_CONDITIONAL([PLATFORM_WIN32], [test "x$platform_win32" = "xyes"])
-
-AS_IF([test "x$platform_win32" = "xyes"],
-    [],
-    [
-        AC_MSG_CHECKING([for -fvisibility=hidden compiler flag])
-        saved_CXXFLAGS="$CXXFLAGS"
-        CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
-        AC_TRY_COMPILE([], [],
-            [
-                AC_MSG_RESULT([yes])
-                CXXFLAGS="$CXXFLAGS -DLIBWPS_VISIBILITY"
-            ],
-            [
-                AC_MSG_RESULT([no])
-                CXXFLAGS="$saved_CXXFLAGS"
-            ]
-        )
-    ]
-)
 
 # =========================
 # Platform check for darwin
@@ -252,8 +234,6 @@ AS_CASE([$with_sharedptr],
 
 AS_IF([test "x$with_sharedptr" = "xc++11"], [
 	AC_MSG_CHECKING([for c++11 shared ptr])
-	save_CXXFLAGS="$CXXFLAGS"
-	CXXFLAGS="$CXXFLAGS -std=c++11"
 	AC_COMPILE_IFELSE([
 		AC_LANG_PROGRAM(
 			[[#include <memory>]],
@@ -265,19 +245,8 @@ AS_IF([test "x$with_sharedptr" = "xc++11"], [
 	], [
 		AC_MSG_RESULT([no])
 		AC_MSG_ERROR([Could not find C++11 implementation of shared_ptr])
-	])
-	CXXFLAGS="$save_CXXFLAGS"
-	AC_MSG_CHECKING([whether the compiler needs -std=c++11])
-	AC_COMPILE_IFELSE([
-		AC_LANG_PROGRAM(
-			[[#include <memory>]],
-			[[std::shared_ptr<int> p;]]
-		)
 	], [
-		AC_MSG_RESULT([no])
-	], [
-		AC_MSG_RESULT([yes])
-		CXXFLAGS="$CXXFLAGS -std=c++11"
+		[#include <memory>]
 	])
 ])
 AS_IF([test "x$with_sharedptr" = "xtr1"], [
@@ -293,6 +262,8 @@ AS_IF([test "x$with_sharedptr" = "xtr1"], [
 	], [
 		AC_MSG_RESULT([no])
 		AC_MSG_ERROR([Could not find TR1 implementation of shared_ptr])
+	], [
+		[#include <tr1/memory>]
 	])
 ])
 AS_IF([test "x$with_sharedptr" = "xboost"], [
@@ -329,47 +300,6 @@ AS_IF([test "x$with_docs" != "xno"], [
 ], [build_docs=no])
 AM_CONDITIONAL([WITH_LIBWPS_DOCS], [test "x$build_docs" != "xno"])
 
-
-# ====================
-# Find librevenge
-# ====================
-PKG_CHECK_MODULES([REVENGE],[ librevenge-0.0 ])
-AC_SUBST(REVENGE_CFLAGS)
-AC_SUBST(REVENGE_LIBS)
-
-# =====
-# Tools
-# =====
-AC_ARG_ENABLE([tools],
-	[AS_HELP_STRING([--disable-tools], [Build conversion tools])],
-	[enable_tools="$enableval"],
-	[enable_tools=yes]
-)
-AM_CONDITIONAL(BUILD_TOOLS, [test "x$enable_tools" = "xyes"])
-
-# =======
-# Fuzzers
-# =======
-AC_ARG_ENABLE([fuzzers],
-	[AS_HELP_STRING([--enable-fuzzers], [Build fuzzer(s)])],
-	[enable_fuzzers="$enableval"],
-	[enable_fuzzers=no]
-)
-AM_CONDITIONAL(BUILD_FUZZERS, [test "x$enable_fuzzers" = "xyes"])
-
-AS_IF([test "x$enable_tools" = "xyes" -o "x$enable_fuzzers" = "xyes"], [
-	PKG_CHECK_MODULES([REVENGE_GENERATORS],[
-		librevenge-generators-0.0
-	])
-	PKG_CHECK_MODULES([REVENGE_STREAM],[
-		librevenge-stream-0.0
-	])
-])
-AC_SUBST([REVENGE_GENERATORS_CFLAGS])
-AC_SUBST([REVENGE_GENERATORS_LIBS])
-AC_SUBST([REVENGE_STREAM_CFLAGS])
-AC_SUBST([REVENGE_STREAM_LIBS])
-
 # =====================
 # Prepare all .in files
 # =====================
@@ -379,20 +309,12 @@ inc/Makefile
 inc/libwps/Makefile
 src/Makefile
 src/conv/Makefile
-src/conv/helper/Makefile
 src/conv/html/Makefile
 src/conv/html/wps2html.rc
 src/conv/raw/Makefile
 src/conv/raw/wps2raw.rc
 src/conv/text/Makefile
 src/conv/text/wps2text.rc
-src/conv/wks2csv/Makefile
-src/conv/wks2csv/wks2csv.rc
-src/conv/wks2raw/Makefile
-src/conv/wks2raw/wks2raw.rc
-src/conv/wks2text/Makefile
-src/conv/wks2text/wks2text.rc
-src/fuzz/Makefile
 src/lib/Makefile
 src/lib/libwps.rc
 docs/Makefile
@@ -413,7 +335,6 @@ Build configuration:
 	debug:           ${enable_debug}
 	full-debug:      ${enable_full_debug}
 	docs:            ${build_docs}
-	fuzzers:         ${enable_fuzzers}
 	shared_ptr:      ${with_sharedptr}
 	static-tools:    ${enable_static_tools}
 	werror:          ${enable_werror}

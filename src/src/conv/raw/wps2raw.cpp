@@ -1,4 +1,3 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
 /* libwps
  * Version: MPL 2.0 / LGPLv2.1+
  *
@@ -22,98 +21,67 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-
-#include <librevenge/librevenge.h>
-#include <librevenge-generators/librevenge-generators.h>
-#include <librevenge-stream/librevenge-stream.h>
-
+#include <libwpd-stream/libwpd-stream.h>
 #include <libwps/libwps.h>
-
-#include "helper.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifndef VERSION
-#define VERSION "UNKNOWN VERSION"
-#endif
-
-static int printUsage()
-{
-	printf("`wps2raw' is used to test text document import in libwps.\n");
-	printf("Supported formats are Microsoft Works, Write and Word for DOS.\n");
-	printf("\n");
-	printf("Usage: wps2raw [OPTION] FILE\n");
-	printf("\n");
-	printf("Options:\n");
-	printf("\t-h, --help                 show this help message\n");
-	printf("\t-v, --version              show version information\n");
-	printf("\t--callgraph                display the call graph nesting level\n");
-	printf("\t--password PASSWORD        set password to open the file\n");
-	printf("\n");
-	printf("Report bugs to <https://sourceforge.net/p/libwps/bugs/> or <https://bugs.documentfoundation.org/>.\n");
-	return -1;
-}
-
-static int printVersion()
-{
-	printf("wps2raw %s\n", VERSION);
-	return 0;
-}
-
-using namespace libwps;
+#include "RawDocumentGenerator.h"
 
 int main(int argc, char *argv[])
 {
 	bool printIndentLevel = false;
 	char *file = 0;
-	char const *password=0;
 
-	for (int arg=1; arg<argc; ++arg)
+	if (argc < 2)
 	{
-		if (!strcmp(argv[arg], "-h") || !strcmp(argv[arg], "--help"))
-			return printUsage();
-		if (!strcmp(argv[arg], "-v") || !strcmp(argv[arg], "--version"))
-			return printVersion();
-		if (!strcmp(argv[arg], "--callgraph"))
-		{
-			printIndentLevel = true;
-			continue;
-		}
-		if (!strcmp(argv[arg], "--password"))
-		{
-			if (arg+1>=argc)
-				return printUsage();
-			password=argv[++arg];
-			continue;
-		}
-		if (file)
-			return printUsage();
-		file = argv[arg];
+		printf("Usage: wps2raw [OPTION] <Works Document>\n");
+		return -1;
 	}
-	if (!file)
-		return printUsage();
 
-	librevenge::RVNGFileStream input(file);
+	if (!strcmp(argv[1], "--callgraph"))
+	{
+		if (argc == 2)
+		{
+			printf("Usage: wps2raw [OPTION] <Works Document>\n");
+			return -1;
+		}
 
-	WPSCreator creator;
-	WPSKind kind;
-	bool needCharEncoding;
-	WPSConfidence confidence = WPSDocument::isFileFormatSupported(&input,kind,creator, needCharEncoding);
-	if (confidence == WPS_CONFIDENCE_NONE || kind != WPS_TEXT)
+		printIndentLevel = true;
+		file = argv[2];
+	}
+	else if (!strcmp(argv[1], "--help"))
+	{
+		printf("Usage: wps2raw [OPTION] <Works Document>\n");
+		printf("\n");
+		printf("Options:\n");
+		printf("--callgraph		    Display the call graph nesting level\n");
+		printf("--help              Shows this help message\n");
+		return 0;
+	}
+	else
+		file = argv[1];
+
+	WPXFileStream input(file);
+
+	WPSConfidence confidence = WPSDocument::isFileFormatSupported(&input);
+	if (confidence == WPS_CONFIDENCE_NONE || confidence == WPS_CONFIDENCE_POOR)
 	{
 		printf("ERROR: Unsupported file format!\n");
 		return 1;
 	}
 
-	librevenge::RVNGRawTextGenerator listenerImpl(printIndentLevel);
-	WPSResult error= WPSDocument::parse(&input, &listenerImpl, password);
+	RawDocumentGenerator listenerImpl(printIndentLevel);
+	WPSResult error = WPSDocument::parse(&input, &listenerImpl);
 
-	if (libwpsHelper::checkErrorAndPrintMessage(error))
+	if (error == WPS_FILE_ACCESS_ERROR)
+		fprintf(stderr, "ERROR: File Exception!\n");
+	else if (error == WPS_PARSE_ERROR)
+		fprintf(stderr, "ERROR: Parse Exception!\n");
+	else if (error == WPS_OLE_ERROR)
+		fprintf(stderr, "ERROR: File is an OLE document, but does not contain a Works stream!\n");
+	else if (error != WPS_OK)
+		fprintf(stderr, "ERROR: Unknown Error!\n");
+
+	if (error != WPS_OK)
 		return 1;
 
 	return 0;
 }
-/* vim:set shiftwidth=4 softtabstop=4 noexpandtab: */

@@ -22,10 +22,8 @@
  *
  * For further information visit http://libwps.sourceforge.net
  */
-#include <iomanip>
-#include <sstream>
 
-#include <librevenge/librevenge.h>
+#include <libwpd/libwpd.h>
 
 #include "libwps_internal.h"
 
@@ -34,9 +32,9 @@
 
 #include "WPSParagraph.h"
 
-void WPSTabStop::addTo(librevenge::RVNGPropertyListVector &propList, double decalX) const
+void WPSTabStop::addTo(WPXPropertyListVector &propList, double decalX)
 {
-	librevenge::RVNGPropertyList tab;
+	WPXPropertyList tab;
 
 	// type
 	switch (m_alignment)
@@ -60,7 +58,7 @@ void WPSTabStop::addTo(librevenge::RVNGPropertyListVector &propList, double deca
 	// leader character
 	if (m_leaderCharacter != 0x0000)
 	{
-		librevenge::RVNGString sLeader;
+		WPXString sLeader;
 		sLeader.sprintf("%c", m_leaderCharacter);
 		tab.insert("style:leader-text", sLeader);
 		tab.insert("style:leader-style", "solid");
@@ -68,7 +66,7 @@ void WPSTabStop::addTo(librevenge::RVNGPropertyListVector &propList, double deca
 
 	// position
 	double position = m_position+decalX;
-	if (position < 0.00005 && position > -0.00005)
+	if (position < 0.00005f && position > -0.00005f)
 		position = 0.0;
 	tab.insert("style:position", position);
 
@@ -117,18 +115,7 @@ std::ostream &operator<<(std::ostream &o, WPSParagraph const &pp)
 		o << "rightMarg=" << pp.m_margins[2] << ",";
 
 	if (pp.m_spacings[0] < 1.0 || pp.m_spacings[0] > 1.0)
-	{
-		o << "interLineSpacing=" << pp.m_spacings[0];
-		if (pp.m_spacingsInterlineUnit==librevenge::RVNG_PERCENT)
-			o << "%";
-		else if (pp.m_spacingsInterlineUnit==librevenge::RVNG_POINT)
-			o << "pt";
-		else if (pp.m_spacingsInterlineUnit==librevenge::RVNG_INCH)
-			o << "in";
-		if (pp.m_spacingsInterlineType==WPSParagraph::AtLeast)
-			o << "[atLeast]";
-		o << ",";
-	}
+		o << "interLineSpacing=" << pp.m_spacings[0] << ",";
 	if (pp.m_spacings[1]<0||pp.m_spacings[1]>0)
 		o << "befSpacing=" << pp.m_spacings[1] << ",";
 	if (pp.m_spacings[2]<0||pp.m_spacings[2]>0)
@@ -137,7 +124,7 @@ std::ostream &operator<<(std::ostream &o, WPSParagraph const &pp)
 	if (pp.m_breakStatus & libwps::NoBreakBit) o << "dontbreak,";
 	if (pp.m_breakStatus & libwps::NoBreakWithNextBit) o << "dontbreakafter,";
 
-	switch (pp.m_justify)
+	switch(pp.m_justify)
 	{
 	case libwps::JustificationLeft:
 		break;
@@ -154,7 +141,7 @@ std::ostream &operator<<(std::ostream &o, WPSParagraph const &pp)
 		o << "just=fullAllLines, ";
 		break;
 	default:
-		WPS_DEBUG_MSG(("WPSParagraph:operator<<: called with unknown justification\n"));
+		assert(false); // unhandled Justification enum value
 		o << "just=" << static_cast<unsigned>(pp.m_justify) << ", ";
 		break;
 	}
@@ -166,8 +153,8 @@ std::ostream &operator<<(std::ostream &o, WPSParagraph const &pp)
 			o << pp.m_tabs[i] << ",";
 		o << "),";
 	}
-	if (!pp.m_backgroundColor.isWhite())
-		o << "backgroundColor=" << pp.m_backgroundColor << ",";
+	if (pp.m_backgroundColor != 0xFFFFFF)
+		o << "backgroundColor=" << std::hex << pp.m_backgroundColor << std::dec << ",";
 	if (pp.m_listLevelIndex >= 1)
 		o << pp.m_listLevel << ":" << pp.m_listLevelIndex <<",";
 
@@ -186,103 +173,53 @@ std::ostream &operator<<(std::ostream &o, WPSParagraph const &pp)
 	return o;
 }
 
-void WPSParagraph::addTo(librevenge::RVNGPropertyList &propList, bool inTable) const
+void WPSParagraph::send(shared_ptr<WPSContentListener> listener) const
 {
-	switch (m_justify)
+	if (!listener)
+		return;
+	listener->setParagraphJustification(m_justify);
+	listener->setTabs(m_tabs);
+
+	double leftMargin = m_margins[1];
+	WPSList::Level level;
+	if (m_listLevelIndex >= 1)
 	{
-	case libwps::JustificationLeft:
-		// doesn't require a paragraph prop - it is the default
-		propList.insert("fo:text-align", "left");
-		break;
-	case libwps::JustificationCenter:
-		propList.insert("fo:text-align", "center");
-		break;
-	case libwps::JustificationRight:
-		propList.insert("fo:text-align", "end");
-		break;
-	case libwps::JustificationFull:
-		propList.insert("fo:text-align", "justify");
-		break;
-	case libwps::JustificationFullAllLines:
-		propList.insert("fo:text-align", "justify");
-		propList.insert("fo:text-align-last", "justify");
-		break;
-	default:
-		break;
+		level = m_listLevel;
+		level.m_labelWidth = (m_margins[1]-level.m_labelIndent);
+		if (level.m_labelWidth<0.1)
+			level.m_labelWidth = 0.1;
+		leftMargin=level.m_labelIndent;
+		level.m_labelIndent = 0;
 	}
-	if (!inTable)
-	{
-		// these properties are not appropriate when a table is opened..
-		propList.insert("fo:margin-left", m_listLevelIndex >= 1 ? m_listLevel.m_labelIndent : m_margins[1]);
-		propList.insert("fo:text-indent", m_margins[0]);
-		propList.insert("fo:margin-right", m_margins[2]);
-		if (!m_backgroundColor.isWhite())
-			propList.insert("fo:background-color", m_backgroundColor.str().c_str());
-		if (m_border && m_borderStyle.m_style != WPSBorder::None)
-		{
-			int border = m_border;
-			if (border == 0xF)
-				m_borderStyle.addTo(propList);
-			else
-			{
-				if (border & WPSBorder::LeftBit)
-					m_borderStyle.addTo(propList, "left");
-				if (border & WPSBorder::RightBit)
-					m_borderStyle.addTo(propList, "right");
-				if (border & WPSBorder::TopBit)
-					m_borderStyle.addTo(propList, "top");
-				if (border & WPSBorder::BottomBit)
-					m_borderStyle.addTo(propList, "bottom");
-			}
-		}
-	}
+	listener->setParagraphMargin(leftMargin, WPS_LEFT);
+	listener->setParagraphMargin(m_margins[2], WPS_RIGHT);
+	listener->setParagraphTextIndent(m_margins[0]);
+
+	double interline = m_spacings[0];
+	listener->setParagraphLineSpacing(interline>0.0 ? interline : 1.0);
+
 	// Note:
 	// as we can not use percent, this may give a good approximation
-	propList.insert("fo:margin-top", (10.*m_spacings[1])/72., librevenge::RVNG_INCH);
-	propList.insert("fo:margin-bottom", (10.*m_spacings[2])/72., librevenge::RVNG_INCH);
-	switch (m_spacingsInterlineType)
+	listener->setParagraphMargin((10.*m_spacings[1])/72.,WPS_TOP);
+	listener->setParagraphMargin((10.*m_spacings[2])/72.,WPS_BOTTOM);
+
+	if (m_listLevelIndex >= 1)
 	{
-	case Fixed:
-		if (m_spacings[0] >= 0)
-			propList.insert("fo:line-height", m_spacings[0], m_spacingsInterlineUnit);
-		break;
-	case AtLeast:
-		if (m_spacings[0] <= 0 && m_spacings[0] >= 0)
-			break;
-		if (m_spacings[0] < 0)
+		shared_ptr<WPSList> theList = listener->getCurrentList();
+		if (!theList)
 		{
-			static bool first = true;
-			if (first)
-			{
-				WPS_DEBUG_MSG(("WPSParagraph::addTo: interline spacing seems bad\n"));
-				first = false;
-			}
+			theList = shared_ptr<WPSList>(new WPSList);
+			theList->set(m_listLevelIndex, level);
+			listener->setCurrentList(theList);
 		}
-		else if (m_spacingsInterlineUnit != librevenge::RVNG_PERCENT)
-			propList.insert("style:line-height-at-least", m_spacings[0], m_spacingsInterlineUnit);
 		else
-		{
-			propList.insert("style:line-height-at-least", m_spacings[0]*12.0, librevenge::RVNG_POINT);
-			static bool first = true;
-			if (first)
-			{
-				first = false;
-				WPS_DEBUG_MSG(("WPSParagraph::addTo: assume height=12 to set line spacing at least with percent type\n"));
-			}
-		}
-		break;
-	default:
-		WPS_DEBUG_MSG(("WPSParagraph::addTo: can not set line spacing type: %d\n",int(m_spacingsInterlineType)));
-		break;
+			theList->set(m_listLevelIndex, level);
+		listener->setCurrentListLevel(m_listLevelIndex);
 	}
-	if (m_breakStatus & libwps::NoBreakBit)
-		propList.insert("fo:keep-together", "always");
-	if (m_breakStatus & libwps::NoBreakWithNextBit)
-		propList.insert("fo:keep-with-next", "always");
-	librevenge::RVNGPropertyListVector tabStops;
-	for (size_t i=0; i< m_tabs.size(); i++)
-		m_tabs[i].addTo(tabStops, 0);
-	if (tabStops.count())
-		propList.insert("style:tab-stops", tabStops);
+	else
+		listener->setCurrentListLevel(0);
+
+	listener->setParagraphBackgroundColor(m_backgroundColor);
+	listener->setParagraphBorders(m_border, m_borderStyle);
 }
 /* vim:set shiftwidth=4 softtabstop=4 noexpandtab: */

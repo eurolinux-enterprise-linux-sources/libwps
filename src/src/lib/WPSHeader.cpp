@@ -23,14 +23,13 @@
 #include <string.h>
 
 #include "libwps_internal.h"
+#include "WPSOLEStream.h"
 
 #include "WPSHeader.h"
 
-using namespace libwps;
-
-WPSHeader::WPSHeader(RVNGInputStreamPtr &input, RVNGInputStreamPtr &fileInput, uint8_t majorVersion, WPSKind kind, WPSCreator creator) :
-	m_input(input), m_fileInput(fileInput), m_majorVersion(majorVersion), m_kind(kind), m_creator(creator),
-	m_isEncrypted(false), m_needEncodingFlag(false)
+WPSHeader::WPSHeader(WPXInputStreamPtr &input, shared_ptr<libwps::Storage> &storage, uint8_t majorVersion) :
+	m_input(input), m_oleStorage(storage),
+	m_majorVersion(majorVersion)
 {
 }
 
@@ -47,134 +46,65 @@ WPSHeader::~WPSHeader()
  * Works 3 without OLE, so those two types use the same parser.
  *
  */
-WPSHeader *WPSHeader::constructHeader(RVNGInputStreamPtr &input)
+WPSHeader *WPSHeader::constructHeader(WPXInputStreamPtr &input)
 {
-	if (!input->isStructured())
-	{
-		input->seek(0, librevenge::RVNG_SEEK_SET);
-		uint8_t val[6];
-		for (int i=0; i<6; ++i) val[i] = libwps::readU8(input);
+	WPS_DEBUG_MSG(("WPSHeader::constructHeader()\n"));
 
-		if (val[0] < 6 && val[1] == 0xFE)
+	shared_ptr<libwps::Storage> oleStorage(new libwps::Storage(input));
+	if (oleStorage && !oleStorage->isOLEStream())
+		oleStorage.reset();
+	if (!oleStorage)
+	{
+		input->seek(0, WPX_SEEK_SET);
+		if (libwps::readU8(input.get()) < 6
+		        && 0xFE == libwps::readU8(input.get()))
 		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Works v2 format detected\n"));
-			return new WPSHeader(input, input, 2);
-		}
-		// works1 dos file begin by 2054
-		if ((val[0] == 0xFF || val[0] == 0x20) && val[1]==0x54)
-		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Works wks database\n"));
-			return new WPSHeader(input, input, 1, WPS_DATABASE);
-		}
-		if (val[0] == 0xFF && val[1] == 0 && val[2]==2)
-		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Works wks detected\n"));
-			return new WPSHeader(input, input, 3, WPS_SPREADSHEET);
-		}
-		if (val[0] == 00 && val[1] == 0 && val[2]==2)
-		{
-			if (val[3]==0 && (val[4]==0x20 || val[4]==0x21) && val[5]==0x51)
-			{
-				WPS_DEBUG_MSG(("WPSHeader::constructHeader: Quattro Pro wq1 or wq2 detected\n"));
-				return new WPSHeader(input, input, 2, WPS_SPREADSHEET, WPS_QUATTRO_PRO);
-			}
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: potential Lotus|Microsft Works|Quattro Pro spreadsheet detected\n"));
-			return new WPSHeader(input, input, 2, WPS_SPREADSHEET);
-		}
-		if (val[0] == 00 && val[1] == 0x0 && val[2]==0x1a)
-		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: Lotus spreadsheet detected\n"));
-			return new WPSHeader(input, input, 101, WPS_SPREADSHEET, WPS_LOTUS);
-		}
-		if ((val[0] == 0x31 || val[0] == 0x32) && val[1] == 0xbe && val[2] == 0 && val[3] == 0 && val[4] == 0 && val[5] == 0xab)
-		{
-			// This value is always 0 for Word for DOS
-			input->seek(96, librevenge::RVNG_SEEK_SET);
-			if (libwps::readU16(input))
-			{
-				WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Write detected\n"));
-				return new WPSHeader(input, input, 3, WPS_TEXT, WPS_MSWRITE);
-			}
-			else
-			{
-				WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Word for DOS detected\n"));
-				return new WPSHeader(input, input, 0, WPS_TEXT, WPS_DOSWORD);
-			}
+			WPS_DEBUG_MSG(("Microsoft Works v2 format detected\n"));
+			return new WPSHeader(input, oleStorage, 2);
 		}
 		return 0;
 	}
 
-	RVNGInputStreamPtr document_mn0(input->getSubStreamByName("MN0"));
+	WPXInputStreamPtr document_mn0(oleStorage->getDocumentOLEStream("MN0"));
 	if (document_mn0)
 	{
 		// can be a mac or a pc document
 		// each must contains a MM Ole which begins by 0x444e: Mac or 0x4e44: PC
-		RVNGInputStreamPtr document_mm(input->getSubStreamByName("MM"));
+		WPXInputStreamPtr document_mm(oleStorage->getDocumentOLEStream("MM"));
 		if (document_mm && libwps::readU16(document_mm) == 0x4e44)
 		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Works Mac v4 format detected\n"));
+			WPS_DEBUG_MSG(("Microsoft Works Mac v4 format detected\n"));
 			return 0;
 		}
-		// now, look if this is a database document
-		uint16_t fileMagic=libwps::readU16(document_mn0);
-		if (fileMagic == 0x54FF)
-		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Works Database format detected\n"));
-			return new WPSHeader(document_mn0, input, 4, WPS_DATABASE);
-		}
-		WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Works v4 format detected\n"));
-		return new WPSHeader(document_mn0, input, 4);
+		WPS_DEBUG_MSG(("Microsoft Works v4 format detected\n"));
+		return new WPSHeader(document_mn0, oleStorage, 4);
 	}
 
-	RVNGInputStreamPtr document_contents(input->getSubStreamByName("CONTENTS"));
+	WPXInputStreamPtr document_contents(oleStorage->getDocumentOLEStream("CONTENTS"));
 	if (document_contents)
 	{
 		/* check the Works 2000/7/8 format magic */
-		document_contents->seek(0, librevenge::RVNG_SEEK_SET);
+		document_contents->seek(0, WPX_SEEK_SET);
 
 		char fileMagic[8];
-		int i = 0;
-		for (; i<7 && !document_contents->isEnd(); i++)
+		for (int i=0; i<7 && !document_contents->atEOS(); i++)
 			fileMagic[i] = char(libwps::readU8(document_contents.get()));
-		fileMagic[i] = '\0';
+		fileMagic[7] = '\0';
 
 		/* Works 7/8 */
 		if (0 == strcmp(fileMagic, "CHNKWKS"))
 		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: Microsoft Works v8 (maybe 7) format detected\n"));
-			return new WPSHeader(document_contents, input, 8);
+			WPS_DEBUG_MSG(("Microsoft Works v8 (maybe 7) format detected\n"));
+			return new WPSHeader(document_contents, oleStorage, 8);
 		}
 
 		/* Works 2000 */
 		if (0 == strcmp(fileMagic, "CHNKINK"))
 		{
-			return new WPSHeader(document_contents, input, 5);
+			return new WPSHeader(document_contents, oleStorage, 5);
 		}
 	}
 
-	/* check for a lotus 123 zip file containing a WK3 and FM3
-	   or a old lotus file containing WK1 and FMT
-	 */
-	if (input->existsSubStream("WK1") && input->existsSubStream("FMT"))
-	{
-		RVNGInputStreamPtr stream(input->getSubStreamByName("WK1"));
-		if (stream && stream->seek(0, librevenge::RVNG_SEEK_SET) == 0 && libwps::readU16(stream)==0 &&
-		        libwps::readU8(stream)==2 && libwps::readU8(stream)==0)
-		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: find a zip Lotus spreadsheet\n"));
-			return new WPSHeader(stream, input, 2, WPS_SPREADSHEET, WPS_LOTUS);
-		}
-	}
-	if (input->existsSubStream("WK3") && input->existsSubStream("FM3"))
-	{
-		RVNGInputStreamPtr stream(input->getSubStreamByName("WK3"));
-		if (stream && stream->seek(0, librevenge::RVNG_SEEK_SET) == 0 && libwps::readU16(stream)==0 &&
-		        libwps::readU8(stream)==0x1a && libwps::readU8(stream)==0)
-		{
-			WPS_DEBUG_MSG(("WPSHeader::constructHeader: find a zip Lotus spreadsheet\n"));
-			return new WPSHeader(stream, input, 101, WPS_SPREADSHEET, WPS_LOTUS);
-		}
-	}
 	return NULL;
 }
 /* vim:set shiftwidth=4 softtabstop=4 noexpandtab: */

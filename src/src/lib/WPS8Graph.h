@@ -33,8 +33,14 @@
 
 #include "WPSDebug.h"
 
-struct WPSOLEParserObject;
+class WPXBinaryData;
+
+class WPSEntry;
 class WPS8Parser;
+class WPSPosition;
+
+typedef class WPSContentListener WPS8ContentListener;
+typedef shared_ptr<WPS8ContentListener> WPS8ContentListenerPtr;
 
 namespace WPS8GraphInternal
 {
@@ -56,13 +62,13 @@ class WPS8Graph
 	friend class WPS8Parser;
 public:
 	//! constructor
-	explicit WPS8Graph(WPS8Parser &parser);
+	WPS8Graph(WPS8Parser &parser);
 
 	//! destructor
 	~WPS8Graph();
 
 	//! sets the listener
-	void setListener(WPSContentListenerPtr &listen)
+	void setListener(WPS8ContentListenerPtr &listen)
 	{
 		m_listener = listen;
 	}
@@ -104,32 +110,33 @@ protected:
 	void sendBorder(int borderId);
 
 	//! adds a list of objects with given ids in the ole lists
-	void storeObjects(std::vector<WPSOLEParserObject> const &objects,
-	                  std::vector<int> const &ids);
+	void storeObjects(std::vector<WPXBinaryData> const &objects,
+	                  std::vector<int> const &ids,
+	                  std::vector<WPSPosition> const &positions);
 
 	//! finds all entries which correspond to some pictures, parses them and stores data
-	bool readStructures(RVNGInputStreamPtr input);
+	bool readStructures(WPXInputStreamPtr input);
 
 	// low level
 
 	/** reads a PICT/MEF4 entry :  reads uncompressed picture of sx*sy of rgb
 	 *
 	 * This kind of entry seems mainly used to store a background picture */
-	bool readPICT(RVNGInputStreamPtr input, WPSEntry const &entry);
+	bool readPICT(WPXInputStreamPtr input, WPSEntry const &entry);
 
 	/** reads a IBGF zone: an entry to a background picture
 	 *
 	 * This small entry seems to contain only an identificator which pointed to a PICT Zone
 	 */
-	bool readIBGF(RVNGInputStreamPtr input, WPSEntry const &entry);
+	bool readIBGF(WPXInputStreamPtr input, WPSEntry const &entry);
 
 	//! parsed BDR/WBDR zone: a complex border formed with 8 pictures
-	bool readBDR(RVNGInputStreamPtr input, WPSEntry const &entry);
+	bool readBDR(WPXInputStreamPtr input, WPSEntry const &entry);
 
 	/** \brief reads METAFILE/CODE
 	 *
 	 * \warning we must probably also recognize the enhanced metafile format: EMF */
-	bool readMetaFile(RVNGInputStreamPtr input, long endPos, librevenge::RVNGBinaryData &pict);
+	bool readMetaFile(WPXInputStreamPtr input, long endPos, WPXBinaryData &pict);
 
 	//! returns the debug file
 	libwps::DebugFile &ascii()
@@ -142,7 +149,7 @@ private:
 
 protected:
 	//! the listener
-	WPSContentListenerPtr m_listener;
+	WPS8ContentListenerPtr m_listener;
 
 	//! the main parser
 	WPS8Parser &m_mainParser;

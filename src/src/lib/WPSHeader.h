@@ -24,66 +24,30 @@
 #define WPSHEADER_H
 
 #include "libwps_internal.h"
-#include <librevenge-stream/librevenge-stream.h>
+#include <libwpd-stream/libwpd-stream.h>
 
-#include "libwps/libwps.h"
+namespace libwps
+{
+class Storage;
+}
 
 class WPSHeader
 {
 public:
-	WPSHeader(RVNGInputStreamPtr &input, RVNGInputStreamPtr &fileInput, uint8_t majorVersion, libwps::WPSKind kind=libwps::WPS_TEXT, libwps::WPSCreator creator=libwps::WPS_MSWORKS);
+	WPSHeader(WPXInputStreamPtr &input, shared_ptr<libwps::Storage> &ole,
+	          uint8_t majorVersion);
 	virtual ~WPSHeader();
 
-	static WPSHeader *constructHeader(RVNGInputStreamPtr &input);
+	static WPSHeader *constructHeader(WPXInputStreamPtr &input);
 
-	RVNGInputStreamPtr &getInput()
+	WPXInputStreamPtr &getInput()
 	{
 		return m_input;
 	}
 
-	RVNGInputStreamPtr &getFileInput()
+	shared_ptr<libwps::Storage> &getOLEStorage()
 	{
-		return m_fileInput;
-	}
-
-	libwps::WPSCreator getCreator() const
-	{
-		return m_creator;
-	}
-
-	void setCreator(libwps::WPSCreator creator)
-	{
-		m_creator=creator;
-	}
-
-	libwps::WPSKind getKind() const
-	{
-		return m_kind;
-	}
-
-	void setKind(libwps::WPSKind kind)
-	{
-		m_kind=kind;
-	}
-
-	bool getIsEncrypted() const
-	{
-		return m_isEncrypted;
-	}
-
-	void setIsEncrypted(bool isEncrypted)
-	{
-		m_isEncrypted=isEncrypted;
-	}
-
-	bool getNeedEncoding() const
-	{
-		return m_needEncodingFlag;
-	}
-
-	void setNeedEncoding(bool needEncoding)
-	{
-		m_needEncodingFlag=needEncoding;
+		return m_oleStorage;
 	}
 
 	uint8_t getMajorVersion() const
@@ -91,24 +55,15 @@ public:
 		return m_majorVersion;
 	}
 
-	void setMajorVersion(uint8_t version)
-	{
-		m_majorVersion=version;
-	}
-
 private:
 	WPSHeader(const WPSHeader &);
 	WPSHeader &operator=(const WPSHeader &);
-	RVNGInputStreamPtr m_input;
-	RVNGInputStreamPtr m_fileInput;
+	WPXInputStreamPtr m_input;
+	shared_ptr<libwps::Storage> m_oleStorage;
 	uint8_t m_majorVersion;
-	libwps::WPSKind m_kind;
-	libwps::WPSCreator m_creator;
-	//! a flag to know if the file is encrypted
-	bool m_isEncrypted;
-	//! a flag to know if we need to have the character set encoding
-	bool m_needEncodingFlag;
 };
+
+typedef shared_ptr<WPSHeader> WPSHeaderPtr;
 
 #endif /* WPSHEADER_H */
 /* vim:set shiftwidth=4 softtabstop=4 noexpandtab: */

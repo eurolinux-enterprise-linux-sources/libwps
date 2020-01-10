@@ -30,6 +30,12 @@
 
 #include "WPSTextParser.h"
 
+class WPSEntry;
+class WPSPosition;
+
+typedef class WPSContentListener WPS8ContentListener;
+typedef shared_ptr<WPS8ContentListener> WPS8ContentListenerPtr;
+
 namespace WPS8Struct
 {
 struct FileData;
@@ -50,11 +56,11 @@ class WPS8Text : public WPSTextParser
 	friend class WPS8Parser;
 	friend class WPS8TextStyle;
 public:
-	explicit WPS8Text(WPS8Parser &parser);
+	WPS8Text(WPS8Parser &parser);
 	~WPS8Text();
 
 	//! sets the listener
-	void setListener(WPSContentListenerPtr &listen);
+	void setListener(WPS8ContentListenerPtr &listen);
 
 	//! returns the number of pages
 	int numPages() const;
@@ -97,12 +103,12 @@ protected:
 	//! return the main parser
 	WPS8Parser &mainParser()
 	{
-		return reinterpret_cast<WPS8Parser &>(m_mainParser);
+		return reinterpret_cast<WPS8Parser &> (m_mainParser);
 	}
 	//! return the main parser
 	WPS8Parser const &mainParser() const
 	{
-		return reinterpret_cast<WPS8Parser const &>(m_mainParser);
+		return reinterpret_cast<WPS8Parser const &> (m_mainParser);
 	}
 
 	//
@@ -118,10 +124,10 @@ protected:
 	// String+text functions
 	//
 	//! reads a string
-	bool readString(RVNGInputStreamPtr input, long page_size,
-	                librevenge::RVNGString &res);
+	bool readString(WPXInputStreamPtr input, long page_size,
+	                WPXString &res);
 	//! reads a utf16 character, \return 0xfffd if an error
-	long readUTF16LE(RVNGInputStreamPtr input, long endPos, uint16_t firstC);
+	long readUTF16LE(WPXInputStreamPtr input, long endPos, uint16_t firstC);
 
 	/** \brief the footnote ( FTN or EDN )
 	 *
@@ -139,10 +145,9 @@ protected:
 
 	/** definition of the plc data parser (low level)
 	 *
-	 * \param bot defines the begin of the text zone corresponding to these properties
-	 * \param eot define the end of the text zone corresponding to these properties
+	 * \param endPos the end of the properties' definition,
+	 * \param bot, \param eot defined the text zone corresponding to these properties
 	 * \param id the number of this properties
-	 * \param data a reference to store the parsed data
 	 * \param mess a string which can be filled to indicate unparsed data */
 	typedef bool (WPS8Text::* DataParser)
 	(long bot, long eot, int id, WPS8Struct::FileData const &data,
@@ -166,7 +171,7 @@ protected:
 	             EndDataParser endParser = 0L);
 	//! default parser
 	bool defDataParser
-	(long, long, int, WPS8Struct::FileData const &data, std::string &mess);
+	(long , long , int , WPS8Struct::FileData const &data, std::string &mess);
 	//! the text zones parser: STRS
 	bool textZonesDataParser(long bot, long eot, int nId,
 	                         WPS8Struct::FileData const &data,
@@ -184,7 +189,7 @@ protected:
 
 protected:
 	//! the listener
-	WPSContentListenerPtr m_listener;
+	WPS8ContentListenerPtr m_listener;
 	//! the graph parser
 	shared_ptr<WPS8TextStyle> m_styleParser;
 	//! the internal state

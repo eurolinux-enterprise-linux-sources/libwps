@@ -32,8 +32,14 @@
 
 #include "WPSDebug.h"
 
-struct WPSOLEParserObject;
+class WPXBinaryData;
+
+class WPSEntry;
 class WPS4Parser;
+class WPSPosition;
+
+typedef class WPSContentListener WPS4ContentListener;
+typedef shared_ptr<WPS4ContentListener> WPS4ContentListenerPtr;
 
 namespace WPS4GraphInternal
 {
@@ -58,13 +64,13 @@ class WPS4Graph
 	friend class WPS4Parser;
 public:
 	//! constructor given the main parser of the MN0 zone
-	explicit WPS4Graph(WPS4Parser &parser);
+	WPS4Graph(WPS4Parser &parser);
 
 	//! destructor
 	~WPS4Graph();
 
 	//! sets the listener
-	void setListener(WPSContentListenerPtr &listen)
+	void setListener(WPS4ContentListenerPtr &listen)
 	{
 		m_listener = listen;
 	}
@@ -85,18 +91,19 @@ protected:
 	int version() const;
 
 	//! store a list of object
-	void storeObjects(std::vector<WPSOLEParserObject> const &objects,
-	                  std::vector<int> const &ids);
+	void storeObjects(std::vector<WPXBinaryData> const &objects,
+	                  std::vector<int> const &ids,
+	                  std::vector<WPSPosition> const &positions);
 
 	/** tries to find a picture in the zone pointed by \a entry
 	 * \return the object id or -1 if find nothing
 	 * \note the content of this zone is mainly unknown,
 	 * so this function may failed to retrieved valid data
 	 */
-	int readObject(RVNGInputStreamPtr input, WPSEntry const &entry);
+	int readObject(WPXInputStreamPtr input, WPSEntry const &entry);
 
-	//! sends an object with identificator \a id as a character to a given pposition
-	void sendObject(WPSPosition const &position, int id);
+	//! sends an object with identificator \a id as a character with given size
+	void sendObject(Vec2f const &size, int id);
 
 	/** send all the objects of a given page:
 	 * \param page if page < 0, sends all the pictures which have not been used,
@@ -117,7 +124,7 @@ private:
 	WPS4Graph &operator=(WPS4Graph const &orig);
 protected:
 	//! the listener
-	WPSContentListenerPtr m_listener;
+	WPS4ContentListenerPtr m_listener;
 
 	//! the main parser
 	WPS4Parser &m_mainParser;

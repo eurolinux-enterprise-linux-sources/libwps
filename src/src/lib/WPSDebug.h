@@ -30,6 +30,8 @@
 
 #include "libwps_internal.h"
 
+class WPXBinaryData;
+
 #  if defined(DEBUG_WITH_FILES)
 #include <fstream>
 #include <map>
@@ -45,7 +47,7 @@ namespace Debug
 //! a debug function to store in a datafile in the current directory
 //! WARNING: this function erase the file fileName if it exists
 //! (if debug_with_files is not defined, does nothing)
-bool dumpFile(librevenge::RVNGBinaryData &data, char const *fileName);
+bool dumpFile(WPXBinaryData &data, char const *fileName);
 
 //! returns a file name from an ole/... name
 std::string flattenFileName(std::string const &name);
@@ -60,11 +62,11 @@ class DebugFile
 {
 public:
 	//! constructor given the input file
-	explicit DebugFile(RVNGInputStreamPtr ip=RVNGInputStreamPtr())
+	DebugFile(WPXInputStreamPtr ip=WPXInputStreamPtr())
 		: m_file(), m_on(false), m_input(ip), m_actOffset(-1), m_notes(), m_skipZones() { }
 
 	//! resets the input
-	void setStream(RVNGInputStreamPtr ip)
+	void setStream(WPXInputStreamPtr ip)
 	{
 		m_input = ip;
 	}
@@ -111,7 +113,7 @@ protected:
 	mutable bool m_on;
 
 	//! the input
-	RVNGInputStreamPtr m_input;
+	WPXInputStreamPtr m_input;
 
 	//! \brief a note and its position (used to sort all notes)
 	struct NotePos
@@ -166,7 +168,7 @@ namespace libwps
 {
 namespace Debug
 {
-inline bool dumpFile(librevenge::RVNGBinaryData &, char const *)
+inline bool dumpFile(WPXBinaryData &, char const *)
 {
 	return true;
 }
@@ -186,33 +188,33 @@ public:
 		return *this;
 	}
 
-	static std::string str()
+	std::string str() const
 	{
 		return std::string("");
 	}
-	static void str(std::string const &) { }
+	void str(std::string const &) { }
 };
 
 class DebugFile
 {
 public:
-	explicit DebugFile(RVNGInputStreamPtr) {}
+	DebugFile(WPXInputStreamPtr) {}
 	DebugFile() {}
-	static void setStream(RVNGInputStreamPtr) {  }
+	void setStream(WPXInputStreamPtr) {  }
 	~DebugFile() { }
 
-	static bool open(std::string const &)
+	bool open(std::string const &)
 	{
 		return true;
 	}
 
-	static void addPos(long) {}
-	static void addNote(char const *) {}
-	static void addDelimiter(long, char) {}
+	void addPos(long ) {}
+	void addNote(char const *) {}
+	void addDelimiter(long, char) {}
 
-	static void reset() { }
+	void reset() { }
 
-	static void skipZone(long, long) {}
+	void skipZone(long , long ) {}
 };
 }
 #  endif

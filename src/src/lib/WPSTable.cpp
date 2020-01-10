@@ -38,65 +38,6 @@
 #include "WPSTable.h"
 
 ////////////////////////////////////////////////////////////
-// WPSColumnFormat
-std::ostream &operator<<(std::ostream &o, WPSColumnFormat const &column)
-{
-	if (column.m_width>=0)
-	{
-		if (column.m_isPercentWidth)
-			o<<"w=" << column.m_width << "%,";
-		else
-			o<<"w=" << column.m_width << ",";
-	}
-	if (column.m_useOptimalWidth) o << "optimal[h],";
-	if (column.m_isHeader) o << "table[header],";
-	if (column.m_numRepeat>1) o << "repeat=" << column.m_numRepeat << ",";
-	return o;
-}
-
-void WPSColumnFormat::addTo(librevenge::RVNGPropertyList &propList) const
-{
-	if (m_width>=0)
-		propList.insert("style:column-width", m_width, m_isPercentWidth ? librevenge::RVNG_PERCENT : librevenge::RVNG_POINT);
-	if (m_useOptimalWidth)
-		propList.insert("style:use-optimal-column-width", true);
-	if (m_isHeader)
-		propList.insert("librevenge:is-header-column", true); // checkme
-	if (m_numRepeat>1)
-		propList.insert("table:number-columns-repeated", m_numRepeat);
-}
-
-////////////////////////////////////////////////////////////
-// WPSRowFormat
-std::ostream &operator<<(std::ostream &o, WPSRowFormat const &row)
-{
-	if (row.m_height>=0)
-	{
-		if (row.m_isMinimalHeight)
-			o<<"h[min]=" << row.m_height << ",";
-		else
-			o<<"h=" << row.m_height << ",";
-	}
-	if (row.m_useOptimalHeight) o << "optimal[h],";
-	if (row.m_isHeader) o << "table[header],";
-	return o;
-}
-
-void WPSRowFormat::addTo(librevenge::RVNGPropertyList &propList) const
-{
-	if (m_height>=0)
-	{
-		if (m_isMinimalHeight)
-			propList.insert("style:min-row-height", m_height, librevenge::RVNG_POINT);
-		else
-			propList.insert("style:row-height", m_height, librevenge::RVNG_POINT);
-	}
-	if (m_useOptimalHeight)
-		propList.insert("style:use-optimal-row-height", true);
-	propList.insert("librevenge:is-header-row", m_isHeader);
-}
-
-////////////////////////////////////////////////////////////
 // destructor, ...
 WPSTable::~WPSTable()
 {
@@ -142,7 +83,7 @@ bool WPSTable::buildStructures()
 		    WPSCell::Compare>::iterator it = set.begin();
 		float maxPosiblePos=0;
 		int actCell = -1;
-		for (; it != set.end(); ++it)
+		for ( ; it != set.end(); it++)
 		{
 			float pos = it->getPos(dim);
 			if (actCell < 0 || pos > maxPosiblePos)
@@ -205,15 +146,12 @@ bool WPSTable::buildStructures()
 		}
 		m_cellsList[c]->m_position = Vec2i(cellPos[0], cellPos[1]);
 		m_cellsList[c]->m_numberCellSpanned = Vec2i(spanCell[0], spanCell[1]);
-		if (spanCell[1] > 0)
+		for (int x = cellPos[0]; x < cellPos[0]+spanCell[0]; x++)
 		{
-			for (int x = cellPos[0]; x < cellPos[0]+spanCell[0]; x++)
-			{
-				if (m_cellsList[c]->isVerticalSet())
-					numYSet[size_t(cellPos[1]+spanCell[1]-1)]++;
-				else
-					numYUnset[size_t(cellPos[1]+spanCell[1]-1)]++;
-			}
+			if (m_cellsList[c]->isVerticalSet())
+				numYSet[size_t(cellPos[1]+spanCell[1]-1)]++;
+			else
+				numYUnset[size_t(cellPos[1]+spanCell[1]-1)]++;
 		}
 	}
 	// finally update the row/col size
@@ -287,11 +225,10 @@ bool WPSTable::sendTable(WPSContentListenerPtr listener)
 		}
 	}
 
-	listener->openTable(m_colsSize, librevenge::RVNG_POINT);
-	WPSListenerPtr listen=listener;
+	listener->openTable(m_colsSize, WPX_POINT);
 	for (size_t r = 0; r < numRows; r++)
 	{
-		listener->openTableRow(m_rowsSize[r], librevenge::RVNG_POINT);
+		listener->openTableRow(m_rowsSize[r], WPX_POINT);
 		for (size_t c = 0; c < numCols; c++)
 		{
 			size_t tablePos = r*numCols+c;
@@ -301,7 +238,7 @@ bool WPSTable::sendTable(WPSContentListenerPtr listener)
 			if (id < 0)
 				continue;
 
-			m_cellsList[size_t(id)]->send(listen);
+			m_cellsList[size_t(id)]->send(listener);
 		}
 		listener->closeTableRow();
 	}
@@ -318,11 +255,10 @@ bool WPSTable::sendAsText(WPSContentListenerPtr listener)
 	if (!listener) return true;
 
 	size_t nCells = m_cellsList.size();
-	WPSListenerPtr listen=listener;
 	for (size_t i = 0; i < nCells; i++)
 	{
 		if (!m_cellsList[i]) continue;
-		m_cellsList[i]->sendContent(listen);
+		m_cellsList[i]->sendContent(listener);
 		listener->insertEOL();
 	}
 	return true;

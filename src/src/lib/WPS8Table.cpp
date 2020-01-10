@@ -26,7 +26,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include <librevenge/librevenge.h>
+#include <libwpd/libwpd.h>
 
 #include "WPSCell.h"
 #include "WPSContentListener.h"
@@ -47,7 +47,7 @@ namespace WPS8TableInternal
 struct Cell : public WPSCell
 {
 	//! constructor
-	explicit Cell(WPS8Table &parser) : WPSCell(), m_tableParser(parser), m_id(-1), m_strsId(-1), m_size()
+	Cell(WPS8Table &parser) : WPSCell(), m_tableParser(parser), m_id(-1), m_strsId(-1), m_size()
 	{
 		WPSBorder emptyBorder;
 		emptyBorder.m_style = WPSBorder::None;
@@ -60,23 +60,18 @@ struct Cell : public WPSCell
 	//! operator<<
 	friend std::ostream &operator<<(std::ostream &o, Cell const &cell);
 	//! call when a cell must be send
-	virtual bool send(WPSListenerPtr &listener)
+	virtual bool send(WPSContentListenerPtr &listener)
 	{
 		if (!listener) return true;
-		WPSContentListener *listen=dynamic_cast<WPSContentListener *>(listener.get());
-		if (!listen)
-		{
-			WPS_DEBUG_MSG(("WPS8TableInternal::Cell::send: unexpected listener\n"));
-			return true;
-		}
-		listen->openTableCell(*this);
+		WPXPropertyList propList;
+		listener->openTableCell(*this, propList);
 		sendContent(listener);
-		listen->closeTableCell();
+		listener->closeTableCell();
 		return true;
 	}
 
 	//! call when the content of a cell must be send
-	virtual bool sendContent(WPSListenerPtr &)
+	virtual bool sendContent(WPSContentListenerPtr &)
 	{
 		m_tableParser.sendTextInCell(m_strsId, m_id);
 		return true;
@@ -111,7 +106,7 @@ std::ostream &operator<<(std::ostream &o, Cell const &cell)
 	{
 		o << "borderSep?=[";
 		for (int i = 0; i < 4; i++)
-			if (cell.m_bordersSep[i] > 0) o << cell.m_bordersSep[i] << ",";
+			if (cell.m_bordersSep[i] > 0 ) o << cell.m_bordersSep[i] << ",";
 			else o << "_,";
 		o << "],";
 	}
@@ -232,7 +227,8 @@ void WPS8Table::flushExtra()
 	std::map<int, Table>::iterator pos = m_state->m_tableMap.begin();
 	while (pos != m_state->m_tableMap.end())
 	{
-		Table &table = pos++->second;
+		Table &table = pos->second;
+		pos++;
 		if (table.m_parsed) continue;
 		int strsid = m_mainParser.getTableSTRSId(table.m_id);
 		if (strsid < 0) continue;
@@ -295,7 +291,7 @@ bool WPS8Table::sendTable(Vec2f const &siz, int tableId, int strsid, bool inText
 ////////////////////////////////////////////////////////////
 // find all structures which correspond to the table
 ////////////////////////////////////////////////////////////
-bool WPS8Table::readStructures(RVNGInputStreamPtr input)
+bool WPS8Table::readStructures(WPXInputStreamPtr input)
 {
 	m_state->m_tableMap.clear();
 
@@ -304,7 +300,8 @@ bool WPS8Table::readStructures(RVNGInputStreamPtr input)
 	pos = nameTable.lower_bound("MCLD");
 	while (pos != nameTable.end())
 	{
-		WPSEntry const &entry = pos++->second;
+		WPSEntry const &entry = pos->second;
+		pos++;
 		if (!entry.hasName("MCLD")) break;
 		if (!entry.hasType("MCLD")) continue;
 
@@ -317,7 +314,7 @@ bool WPS8Table::readStructures(RVNGInputStreamPtr input)
 ////////////////////////////////////////////////////////////
 // low level
 ////////////////////////////////////////////////////////////
-bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
+bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
 {
 	typedef WPS8TableInternal::Cell Cell;
 	typedef WPS8TableInternal::Table Table;
@@ -335,20 +332,20 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 
 	if (length < 24)
 	{
-		WPS_DEBUG_MSG(("WPS8Table::readMCLD: warning: MCLD length=0x%lx\n", (unsigned long) length));
+		WPS_DEBUG_MSG(("WPS8Table::readMCLD: warning: MCLD length=0x%lx\n", length));
 
 		return false;
 	}
 
 	entry.setParsed();
-	input->seek(page_offset, librevenge::RVNG_SEEK_SET);
+	input->seek(page_offset, WPX_SEEK_SET);
 
 	libwps::DebugStream f;
 	int mZone = (int) libwps::read32(input);
 	int nTables = (int) libwps::read32(input);
 
 	f << "maxUnknown=" << mZone << ", nTables= " << nTables;
-	if ((6+long(nTables)) * 4 > length) return false;
+	if ((6+nTables) * 4 > length) return false;
 
 	f << ", ids=(";
 	std::vector<int> listIds;
@@ -367,9 +364,9 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 	bool ok = true;
 
 	static char const *(borderNames[]) = { "T", "L", "R", "B" };
-	static int const(borderPos[]) =
+	static int const (borderPos[]) =
 	{ WPSBorder::Top, WPSBorder::Left, WPSBorder::Right, WPSBorder::Bottom};
-	static int const(borderBit[]) =
+	static int const (borderBit[]) =
 	{
 		WPSBorder::TopBit, WPSBorder::LeftBit,
 		WPSBorder::RightBit, WPSBorder::BottomBit
@@ -499,7 +496,7 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 			cell->m_id = int(actualCell);
 
 			libwps::DebugStream f2;
-			WPSColor cellColor[] = { WPSColor::black(), WPSColor::white() };
+			uint32_t cellColor[] = { 0, 0xFFFFFF };
 
 			for (size_t c = 0; c < nChild; c++)
 			{
@@ -531,9 +528,9 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 					if (dt.id() == 4) cell->m_size.setX(float(dt.m_value)/914400.f);
 					else cell->m_size.setY(float(dt.m_value)/914400.f);
 					break;
-				// border size : unknown dim
-				// [ 1, 3, 1, 3, ]
-				// [ 0.666667, 1.33333, 0.666667, 1.33333, ]/30
+					// border size : unknown dim
+					// [ 1, 3, 1, 3, ]
+					// [ 0.666667, 1.33333, 0.666667, 1.33333, ]/30
 				case 6:
 				case 7:
 				case 8:
@@ -548,7 +545,7 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 					f2 << "f" << dt.id() << "=" << std::hex << dt.m_value << std::dec << ",";
 					break;
 				case 0x13:   //find -1|6 here
-					f2 << "f" << dt.id() << "=" << (int)(int8_t)(dt.m_value) << ",";
+					f2 << "f" << dt.id() << "=" <<  (int) (int8_t) (dt.m_value) << ",";
 					break;
 				case 0x1d: // first color
 				case 0x1e: // second color
@@ -563,7 +560,16 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 						percent = float(dt.m_value)*0.1f; // gray motif
 					else
 						f2 << "backMotif=" << dt.m_value << ",";
-					cell->setBackgroundColor(WPSColor::barycenter(percent,cellColor[0],1.f-percent,cellColor[1]));
+					uint32_t fCol = 0;
+					int decal = 0;
+					for (int i = 0; i < 3; i++)
+					{
+						uint32_t col = uint32_t(percent*float((cellColor[0]>>decal)&0xFF)+
+						                        (1.0f-percent)*float((cellColor[1]>>decal)&0xFF));
+						fCol = uint32_t(fCol | (col<<decal));
+						decal+=8;
+					}
+					cell->setBackgroundColor(fCol);
 					break;
 				}
 				// the border color
@@ -586,7 +592,7 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 					std::string mess("");
 					int wh = (dt.id()-0x21)/3;
 					WPSBorder border = cell->borders()[size_t(borderPos[wh])];
-					dt.getBorderStyles(border.m_style, border.m_type, mess);
+					border.m_style = dt.getBorderStyle(mess);
 					cell->setBorders(borderBit[wh], border);
 					if (mess.length())
 						f2 << "bordStyle" << borderNames[wh] << "=[" << mess << "],";
@@ -599,13 +605,12 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 					f2 << "unknBord" << borderNames[(dt.id()-0x22)/3] << "=" << dt.m_value << ",";
 					break;
 				case 0x2c: // 1, 0, -1
-					switch (dt.m_value)
+					switch(dt.m_value)
 					{
 					case 0:
 						break; // normal
 					case 0xFF: // also unset, diff with value = 1 ?
 						f2 << "#f" << dt.id() << "=" << std::hex << dt.m_value << std::dec << ",";
-						WPS_FALLTHROUGH;
 					case 1:
 						cell->setVerticalSet(false);
 						break;
@@ -614,7 +619,7 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 						break;
 					}
 					break;
-				// always 0,excepted 0x15 hich can be 0 or 1 ?
+					// always 0,excepted 0x15 and 0x18 which can be 0 or 1 ?
 				case 0xa:
 				case 0xb:
 				case 0xd:
@@ -622,30 +627,11 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 				case 0x15:
 				case 0x16:
 				case 0x17:
+				case 0x18:
 					if (dt.m_value == 0);
 					else if (dt.m_value > -10 && dt.m_value < 10)
 						f2 << "f" << dt.id() << "=" << dt.m_value << ",";
 					else done = false;
-					break;
-				case 0x18:
-					switch (dt.m_value)
-					{
-					case 0:
-						cell->setVAlignement(WPSCellFormat::VALIGN_TOP);
-						break;
-					case 1:
-						cell->setVAlignement(WPSCellFormat::VALIGN_CENTER);
-						break;
-					case 2:
-						cell->setVAlignement(WPSCellFormat::VALIGN_BOTTOM);
-						break;
-					default:
-						if (dt.m_value > -10 && dt.m_value < 10)
-							f2 << "f" << dt.id() << "=" << dt.m_value << ",";
-						else
-							done = false;
-						break;
-					}
 					break;
 				case 0xc:
 				case 0x14:
@@ -665,7 +651,7 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 					f2 << dt << ",";
 			}
 
-			cell->setBox(WPSBox2f(Vec2f(dim[1],dim[0]),Vec2f(dim[3],dim[2])));
+			cell->setBox(Box2f(Vec2f(dim[1],dim[0]),Vec2f(dim[3],dim[2])));
 			totalRealDim += cell->m_size;
 			totalDataDim += cell->box().size();
 			table.add(cellPtr);
@@ -675,7 +661,7 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 				f << ", unk=(" << f2.str() << ")";
 
 			if (!error.empty()) f << ",###err=" << error;
-			input->seek(lastPosOk+sz, librevenge::RVNG_SEEK_SET);
+			input->seek(lastPosOk+sz, WPX_SEEK_SET);
 
 			ascii().addPos(lastPosOk);
 			ascii().addNote(f.str().c_str());
@@ -689,9 +675,9 @@ bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 		{
 			WPSCellPtr cell = table.getCell(c);
 			if (!cell) continue;
-			WPSBox2f box=cell->box();
-			cell->setBox(WPSBox2f(Vec2f(box[0][0]*factor[0], box[0][1]*factor[1]),
-			                      Vec2f(box[1][0]*factor[0], box[1][1]*factor[1])));
+			Box2f box=cell->box();
+			cell->setBox(Box2f(Vec2f(box[0][0]*factor[0], box[0][1]*factor[1]),
+			                   Vec2f(box[1][0]*factor[0], box[1][1]*factor[1])));
 		}
 
 		if (tableId >=0) m_state->m_tableMap[tableId] = table;

@@ -5,105 +5,68 @@ version_info = -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
 endif
 
 lib_LTLIBRARIES = libwps-@WPS_MAJOR_VERSION@.@WPS_MINOR_VERSION@.la $(target_libwps_stream)
+libwps_@WPS_MAJOR_VERSION@_@WPS_MINOR_VERSION@_includedir = $(includedir)/libwps-@WPS_MAJOR_VERSION@.@WPS_MINOR_VERSION@/libwps
+libwps_@WPS_MAJOR_VERSION@_@WPS_MINOR_VERSION@_include_HEADERS = \
+	$(top_srcdir)/inc/libwps/libwps.h \
+	$(top_srcdir)/inc/libwps/WPSDocument.h
 
-AM_CXXFLAGS =  -I$(top_srcdir)/inc $(REVENGE_CFLAGS) $(DEBUG_CXXFLAGS) -DBUILD_WPS=1
+AM_CXXFLAGS =  -I$(top_srcdir)/inc $(WPD_CFLAGS) $(DEBUG_CXXFLAGS)
 
-libwps_@WPS_MAJOR_VERSION@_@WPS_MINOR_VERSION@_la_LIBADD  = $(REVENGE_LIBS) @LIBWPS_WIN32_RESOURCE@
+libwps_@WPS_MAJOR_VERSION@_@WPS_MINOR_VERSION@_la_LIBADD  = $(WPD_LIBS) @LIBWPS_WIN32_RESOURCE@
 libwps_@WPS_MAJOR_VERSION@_@WPS_MINOR_VERSION@_la_DEPENDENCIES = @LIBWPS_WIN32_RESOURCE@
 libwps_@WPS_MAJOR_VERSION@_@WPS_MINOR_VERSION@_la_LDFLAGS = $(version_info) -export-dynamic -no-undefined
 libwps_@WPS_MAJOR_VERSION@_@WPS_MINOR_VERSION@_la_SOURCES = \
-	libwps_internal.cpp	\
-	libwps_tools_win.h	\
-	libwps_tools_win.cpp	\
-	libwps_internal.h	\
-	DosWord.cpp		\
-	DosWord.h		\
-	Lotus.cpp		\
-	Lotus.h			\
-	LotusGraph.cpp		\
-	LotusGraph.h		\
-	LotusSpreadsheet.cpp	\
-	LotusSpreadsheet.h	\
-	LotusStyleManager.cpp	\
-	LotusStyleManager.h	\
-	MSWrite.cpp		\
-	MSWrite.h		\
-	Quattro.cpp		\
-	Quattro.h		\
-	QuattroSpreadsheet.cpp	\
-	QuattroSpreadsheet.h	\
-	WKS4.cpp		\
-	WKS4.h			\
-	WKS4Format.cpp		\
-	WKS4Format.h		\
-	WKS4Spreadsheet.cpp	\
-	WKS4Spreadsheet.h	\
-	WKSContentListener.cpp	\
-	WKSContentListener.h	\
-	WKSParser.cpp		\
-	WKSParser.h		\
-	WKSSubDocument.cpp	\
-	WKSSubDocument.h	\
-	WPS4.cpp		\
-	WPS4.h			\
-	WPS4Graph.cpp		\
-	WPS4Graph.h		\
-	WPS4Text.cpp		\
-	WPS4Text.h		\
-	WPS8.cpp		\
-	WPS8.h			\
-	WPS8Graph.cpp		\
-	WPS8Graph.h		\
-	WPS8Struct.cpp		\
-	WPS8Struct.h		\
-	WPS8Table.cpp		\
-	WPS8Table.h		\
-	WPS8Text.cpp		\
-	WPS8Text.h		\
-	WPS8TextStyle.cpp	\
-	WPS8TextStyle.h		\
-	WPSCell.cpp		\
-	WPSCell.h		\
-	WPSContentListener.cpp	\
-	WPSContentListener.h	\
-	WPSDebug.cpp		\
-	WPSDebug.h		\
-	WPSDocument.cpp		\
-	WPSEntry.h		\
-	WPSFont.cpp		\
-	WPSFont.h		\
-	WPSGraphicShape.cpp	\
-	WPSGraphicShape.h	\
-	WPSGraphicStyle.cpp	\
-	WPSGraphicStyle.h	\
-	WPSHeader.cpp		\
-	WPSHeader.h		\
-	WPSList.cpp		\
-	WPSList.h		\
-	WPSListener.h		\
-	WPSOLE1Parser.cpp	\
-	WPSOLE1Parser.h		\
-	WPSOLEParser.cpp	\
-	WPSOLEParser.h		\
-	WPSPageSpan.cpp		\
-	WPSPageSpan.h		\
-	WPSParagraph.cpp	\
-	WPSParagraph.h		\
-	WPSParser.cpp		\
-	WPSParser.h		\
-	WPSPosition.h		\
-	WPSStream.cpp		\
-	WPSStream.h		\
-	WPSStringStream.cpp	\
-	WPSStringStream.h	\
-	WPSSubDocument.cpp	\
-	WPSSubDocument.h	\
-	WPSTable.cpp		\
-	WPSTable.h		\
-	WPSTextParser.h		\
-	WPSTextParser.cpp	\
-	WPSTextSubDocument.cpp	\
-	WPSTextSubDocument.h
+	libwps_internal.cpp \
+	libwps_tools_win.cpp \
+	WPS4.cpp \
+	WPS4Graph.cpp \
+	WPS4Text.cpp \
+	WPS8.cpp \
+	WPS8Graph.cpp \
+	WPS8Struct.cpp \
+	WPS8Table.cpp \
+	WPS8Text.cpp \
+	WPS8TextStyle.cpp \
+	WPSCell.cpp \
+	WPSContentListener.cpp \
+	WPSDebug.cpp \
+	WPSDocument.cpp \
+	WPSHeader.cpp \
+	WPSList.cpp \
+	WPSOLEParser.cpp \
+	WPSOLEStream.cpp \
+	WPSPageSpan.cpp \
+	WPSParagraph.cpp \
+	WPSParser.cpp \
+	WPSSubDocument.cpp \
+	WPSTable.cpp \
+	WPSTextParser.cpp \
+	libwps_tools_win.h \
+	libwps_internal.h \
+	WPS4.h \
+	WPS4Graph.h \
+	WPS4Text.h \
+	WPS8.h \
+	WPS8Graph.h \
+	WPS8Struct.h \
+	WPS8Table.h \
+	WPS8Text.h \
+	WPS8TextStyle.h \
+	WPSCell.h \
+	WPSContentListener.h \
+	WPSDebug.h \
+	WPSEntry.h \
+	WPSHeader.h \
+	WPSList.h \
+	WPSOLEParser.h \
+	WPSOLEStream.h \
+	WPSPageSpan.h \
+	WPSParagraph.h \
+	WPSParser.h \
+	WPSPosition.h \
+	WPSSubDocument.h \
+	WPSTable.h \
+	WPSTextParser.h
 
 if OS_WIN32
 
@@ -114,6 +77,7 @@ if OS_WIN32
 endif
 
 EXTRA_DIST = \
+	makefile.mk \
 	libwps.rc.in
 
 # These may be in the builddir too

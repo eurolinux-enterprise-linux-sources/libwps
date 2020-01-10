@@ -27,8 +27,9 @@
 
 #include "WPSParser.h"
 
-WPSParser::WPSParser(RVNGInputStreamPtr &input, WPSHeaderPtr &header) :
-	m_input(input), m_header(header), m_version(0), m_asciiFile(), m_nameMultiMap()
+WPSParser::WPSParser(WPXInputStreamPtr &input, WPSHeaderPtr &header) :
+	m_input(input), m_header(header), m_version(0),
+	m_nameMultiMap(), m_asciiFile()
 {
 	if (header)
 		m_version = header->getMajorVersion();
@@ -37,11 +38,4 @@ WPSParser::WPSParser(RVNGInputStreamPtr &input, WPSHeaderPtr &header) :
 WPSParser::~WPSParser()
 {
 }
-
-RVNGInputStreamPtr WPSParser::getFileInput()
-{
-	if (!m_header) return RVNGInputStreamPtr();
-	return m_header->getFileInput();
-}
-
 /* vim:set shiftwidth=4 softtabstop=4 noexpandtab: */

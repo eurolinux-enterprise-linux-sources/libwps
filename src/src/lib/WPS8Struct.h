@@ -40,9 +40,9 @@ namespace WPS8Struct
 {
 struct FileData;
 /** tries to read a block zone as a Data */
-bool readData(RVNGInputStreamPtr input, long endPos, FileData &dt, std::string &error);
+bool readData(WPXInputStreamPtr input, long endPos, FileData &dt, std::string &error);
 /** tries to read a block zone as a list of Data */
-bool readBlockData(RVNGInputStreamPtr input, long endPos, FileData &dt, std::string &error);
+bool readBlockData(WPXInputStreamPtr input, long endPos, FileData &dt, std::string &error);
 //! operator<< which allows to print for debugging the content of a Data
 std::ostream &operator<< (std::ostream &o, FileData const &dt);
 
@@ -80,13 +80,13 @@ struct FileData
 		return !hasStr() && (m_type & 0x30) != 0;
 	}
 	//! returns a rgb color by converting the integer value field
-	WPSColor getRGBColor() const
+	uint32_t getRGBColor() const
 	{
-		uint32_t col = (uint32_t)(m_value&0xFFFFFF);
-		return WPSColor(col&0xFF, (col>>8)&0xFF, (col>>16)&0xFF);
+		uint32_t col = (uint32_t) (m_value&0xFFFFFF);
+		return (((col>>16)&0xFF) |(col&0xFF00)|((col&0xFF)<<16));
 	}
-	//! returns the border, type style using the integer value field
-	bool getBorderStyles(WPSBorder::Style &style, WPSBorder::Type &type, std::string &mess) const;
+	//! returns the border style using the integer value field
+	WPSBorder::Style getBorderStyle(std::string &mess) const;
 
 	//! returns true if it is a bool data
 	bool isBool() const
@@ -148,7 +148,7 @@ struct FileData
 	}
 protected:
 	//! creates a string used to store the unparsed data
-	static std::string createErrorString(RVNGInputStreamPtr input, long endPos);
+	static std::string createErrorString(WPXInputStreamPtr input, long endPos);
 
 	//! an int which indicates the data type
 	int m_type;
@@ -157,14 +157,14 @@ protected:
 
 	long m_beginOffset /** the initial position of the data of this field */, m_endOffset /** the final position of the data of this field */;
 	//! the input
-	RVNGInputStreamPtr m_input;
+	WPXInputStreamPtr m_input;
 
 	//! operator<<
 	friend std::ostream &operator<< (std::ostream &o, FileData const &dt);
 	//! function which parses an element
-	friend bool readData(RVNGInputStreamPtr input, long endPos, FileData &dt, std::string &error);
+	friend bool readData(WPXInputStreamPtr input, long endPos, FileData &dt, std::string &error);
 	//! function which parses a set of elements
-	friend bool readBlockData(RVNGInputStreamPtr input, long endPos, FileData &dt, std::string &error);
+	friend bool readBlockData(WPXInputStreamPtr input, long endPos, FileData &dt, std::string &error);
 };
 }
 

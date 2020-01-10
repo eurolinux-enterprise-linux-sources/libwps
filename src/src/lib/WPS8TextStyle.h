@@ -30,6 +30,16 @@
 
 #include "WPSDebug.h"
 
+class WPSEntry;
+
+typedef class WPSContentListener WPS8ContentListener;
+typedef shared_ptr<WPS8ContentListener> WPS8ContentListenerPtr;
+
+namespace WPS8Struct
+{
+struct FileData;
+}
+
 namespace WPS8TextStyleInternal
 {
 struct State;
@@ -43,11 +53,11 @@ class WPS8TextStyle
 public:
 	struct FontData;
 
-	explicit WPS8TextStyle(WPS8Text &parser);
+	WPS8TextStyle(WPS8Text &parser);
 	~WPS8TextStyle();
 
 	//! sets the listener
-	void setListener(WPSContentListenerPtr &listen)
+	void setListener(WPS8ContentListenerPtr &listen)
 	{
 		m_listener = listen;
 	}
@@ -95,7 +105,7 @@ protected:
 
 private:
 	//! private copy constructor: forbidden
-	WPS8TextStyle(WPS8TextStyle const &orig);
+	WPS8TextStyle(WPS8TextStyle const &orig );
 	//! private copy operator: forbidden
 	WPS8TextStyle &operator=(WPS8TextStyle const &orig);
 
@@ -103,9 +113,9 @@ protected:
 	//! the main parser
 	WPS8Text &m_mainParser;
 	//! the main input
-	RVNGInputStreamPtr m_input;
+	WPXInputStreamPtr m_input;
 	//! the listener
-	WPSContentListenerPtr m_listener;
+	WPS8ContentListenerPtr m_listener;
 	//! the internal state
 	mutable shared_ptr<WPS8TextStyleInternal::State> m_state;
 	//! the ascii file

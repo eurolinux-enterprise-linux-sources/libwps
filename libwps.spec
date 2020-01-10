@@ -2,7 +2,7 @@
 
 Name:		libwps
 Version:	0.2.9
-Release:	6%{?dist}
+Release:	8%{?dist}
 Summary:	Library for reading and converting Microsoft Works word processor documents
 
 Group:		System Environment/Libraries
@@ -85,6 +85,12 @@ rm -rf %{buildroot}%{_defaultdocdir}/%{name}
 %doc docs/doxygen/html
 
 %changelog
+* Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 0.2.9-8
+- Mass rebuild 2014-01-24
+
+* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 0.2.9-7
+- Mass rebuild 2013-12-27
+
 * Mon Sep 09 2013 David Tardon <dtardon@redhat.com> - 0.2.9-6
 - Resolves: rhbz#1005711 do not compile in C++11 mode
 

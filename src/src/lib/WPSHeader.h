@@ -24,30 +24,36 @@
 #define WPSHEADER_H
 
 #include "libwps_internal.h"
-#include <libwpd-stream/libwpd-stream.h>
+#include <librevenge-stream/librevenge-stream.h>
 
-namespace libwps
-{
-class Storage;
-}
+#include "libwps/libwps.h"
 
 class WPSHeader
 {
 public:
-	WPSHeader(WPXInputStreamPtr &input, shared_ptr<libwps::Storage> &ole,
-	          uint8_t majorVersion);
+	WPSHeader(RVNGInputStreamPtr &input, RVNGInputStreamPtr &fileInput, uint8_t majorVersion, libwps::WPSKind kind=libwps::WPS_TEXT);
 	virtual ~WPSHeader();
 
-	static WPSHeader *constructHeader(WPXInputStreamPtr &input);
+	static WPSHeader *constructHeader(RVNGInputStreamPtr &input);
 
-	WPXInputStreamPtr &getInput()
+	RVNGInputStreamPtr &getInput()
 	{
 		return m_input;
 	}
 
-	shared_ptr<libwps::Storage> &getOLEStorage()
+	RVNGInputStreamPtr &getFileInput()
 	{
-		return m_oleStorage;
+		return m_fileInput;
+	}
+
+	libwps::WPSKind getKind() const
+	{
+		return m_kind;
+	}
+
+	void setKind(libwps::WPSKind kind)
+	{
+		m_kind=kind;
 	}
 
 	uint8_t getMajorVersion() const
@@ -55,15 +61,19 @@ public:
 		return m_majorVersion;
 	}
 
+	void setMajorVersion(uint8_t version)
+	{
+		m_majorVersion=version;
+	}
+
 private:
 	WPSHeader(const WPSHeader &);
 	WPSHeader &operator=(const WPSHeader &);
-	WPXInputStreamPtr m_input;
-	shared_ptr<libwps::Storage> m_oleStorage;
+	RVNGInputStreamPtr m_input;
+	RVNGInputStreamPtr m_fileInput;
 	uint8_t m_majorVersion;
+	libwps::WPSKind m_kind;
 };
-
-typedef shared_ptr<WPSHeader> WPSHeaderPtr;
 
 #endif /* WPSHEADER_H */
 /* vim:set shiftwidth=4 softtabstop=4 noexpandtab: */

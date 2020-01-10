@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libwpd-stream/WPXStream.h>
+#include <librevenge-stream/librevenge-stream.h>
 
 #include "libwps_internal.h"
 #include "libwps_tools_win.h"
@@ -31,9 +31,8 @@
 #include "WPSEntry.h"
 #include "WPSHeader.h"
 #include "WPSOLEParser.h"
-#include "WPSOLEStream.h"
 #include "WPSPageSpan.h"
-#include "WPSSubDocument.h"
+#include "WPSTextSubDocument.h"
 
 #include "WPS4Graph.h"
 #include "WPS4Text.h"
@@ -43,21 +42,21 @@
 namespace WPS4ParserInternal
 {
 //! Internal: the subdocument of a WPS4Parser
-class SubDocument : public WPSSubDocument
+class SubDocument : public WPSTextSubDocument
 {
 public:
 	//! type of an entry stored in textId
 	enum Type { Unknown, MN };
 	//! constructor for a text entry
-	SubDocument(WPXInputStreamPtr input, WPS4Parser &pars, WPSEntry const &entry) :
-		WPSSubDocument (input, &pars), m_entry(entry) {}
+	SubDocument(RVNGInputStreamPtr input, WPS4Parser &pars, WPSEntry const &entry) :
+		WPSTextSubDocument(input, &pars), m_entry(entry) {}
 	//! destructor
 	~SubDocument() {}
 
 	//! operator==
-	virtual bool operator==(shared_ptr<WPSSubDocument> const &doc) const
+	virtual bool operator==(shared_ptr<WPSTextSubDocument> const &doc) const
 	{
-		if ( !doc || !WPSSubDocument::operator==(doc))
+		if (!doc || !WPSTextSubDocument::operator==(doc))
 			return false;
 		SubDocument const *sDoc = dynamic_cast<SubDocument const *>(doc.get());
 		if (!sDoc) return false;
@@ -77,13 +76,13 @@ void SubDocument::parse(shared_ptr<WPSContentListener> &listener, libwps::SubDoc
 		WPS_DEBUG_MSG(("WPS4ParserInternal::SubDocument::parse: no listener\n"));
 		return;
 	}
-	if (!dynamic_cast<WPS4ContentListener *>(listener.get()))
+	if (!dynamic_cast<WPSContentListener *>(listener.get()))
 	{
 		WPS_DEBUG_MSG(("WPS4ParserInternal::SubDocument::parse: bad listener\n"));
 		return;
 	}
 
-	WPS4ContentListenerPtr &listen =  reinterpret_cast<WPS4ContentListenerPtr &>(listener);
+	WPSContentListenerPtr &listen =  reinterpret_cast<WPSContentListenerPtr &>(listener);
 	if (!m_parser)
 	{
 		listen->insertCharacter(' ');
@@ -128,7 +127,7 @@ void SubDocument::parse(shared_ptr<WPSContentListener> &listener, libwps::SubDoc
 //! the state of WPS4
 struct State
 {
-	State() : m_isDosFile(false), m_eof(-1),
+	State() : m_isDosFile(false), m_eof(-1), m_fontType(libwps_tools_win::Font::UNKNOWN),
 		m_pageSpan(), m_noFirstPageHeader(false), m_noFirstPageFooter(false),
 		m_numColumns(1), m_actPage(0), m_numPages(0)
 	{
@@ -137,6 +136,8 @@ struct State
 	bool m_isDosFile;
 	//! the last file position
 	long m_eof;
+	//! the document code page
+	libwps_tools_win::Font::Type m_fontType;
 	//! the actual document size
 	WPSPageSpan m_pageSpan;
 	bool m_noFirstPageHeader /* true if the first page has no header */;
@@ -147,7 +148,7 @@ struct State
 }
 
 // constructor, destructor
-WPS4Parser::WPS4Parser(WPXInputStreamPtr &input, WPSHeaderPtr &header) :
+WPS4Parser::WPS4Parser(RVNGInputStreamPtr &input, WPSHeaderPtr &header) :
 	WPSParser(input, header),
 	m_listener(), m_graphParser(), m_textParser(), m_state()
 {
@@ -156,7 +157,7 @@ WPS4Parser::WPS4Parser(WPXInputStreamPtr &input, WPSHeaderPtr &header) :
 	m_textParser.reset(new WPS4Text(*this, input));
 }
 
-WPS4Parser::~WPS4Parser ()
+WPS4Parser::~WPS4Parser()
 {
 }
 
@@ -174,6 +175,11 @@ float WPS4Parser::pageWidth() const
 int WPS4Parser::numColumns() const
 {
 	return m_state->m_numColumns;
+}
+
+libwps_tools_win::Font::Type WPS4Parser::getDocumentFontType() const
+{
+	return m_state->m_fontType;
 }
 
 bool WPS4Parser::getColor(int id, uint32_t &color) const
@@ -211,38 +217,35 @@ bool WPS4Parser::getColor(int id, uint32_t &color) const
 	color = colorMap[id];
 	return true;
 }
-long WPS4Parser::getSizeFile() const
-{
-	return m_state->m_eof;
-}
+
 void WPS4Parser::setSizeFile(long sz)
 {
 	if (sz > m_state->m_eof)
 		m_state->m_eof = sz;
 }
 
-bool WPS4Parser::checkInFile(long pos)
+bool WPS4Parser::checkFilePosition(long pos)
 {
-	if (pos <= m_state->m_eof)
-		return true;
-	WPXInputStreamPtr input = getInput();
-	long actPos = input->tell();
-	input->seek(pos, WPX_SEEK_SET);
-	bool ok = input->tell() == pos;
-	if (ok) m_state->m_eof = pos;
-	input->seek(actPos, WPX_SEEK_SET);
-	return ok;
+	if (m_state->m_eof < 0)
+	{
+		RVNGInputStreamPtr input = getInput();
+		long actPos = input->tell();
+		input->seek(0, librevenge::RVNG_SEEK_END);
+		m_state->m_eof=input->tell();
+		input->seek(actPos, librevenge::RVNG_SEEK_SET);
+	}
+	return pos <= m_state->m_eof;
 }
 
 // listener, new page
-void WPS4Parser::setListener(shared_ptr<WPS4ContentListener> listener)
+void WPS4Parser::setListener(shared_ptr<WPSContentListener> listener)
 {
 	m_listener = listener;
 	m_graphParser->setListener(m_listener);
 	m_textParser->setListener(m_listener);
 }
 
-shared_ptr<WPS4ContentListener> WPS4Parser::createListener(WPXDocumentInterface *interface)
+shared_ptr<WPSContentListener> WPS4Parser::createListener(librevenge::RVNGTextInterface *interface)
 {
 	std::vector<WPSPageSpan> pageList;
 	WPSPageSpan page1(m_state->m_pageSpan), ps(m_state->m_pageSpan);
@@ -276,8 +279,8 @@ shared_ptr<WPS4ContentListener> WPS4Parser::createListener(WPXDocumentInterface 
 	pageList.push_back(page1);
 	for (int i = 1; i < numPages; i++) pageList.push_back(ps);
 	m_state->m_numPages=numPages;
-	return shared_ptr<WPS4ContentListener>
-	       (new WPS4ContentListener(pageList, interface));
+	return shared_ptr<WPSContentListener>
+	       (new WPSContentListener(pageList, interface));
 }
 
 void WPS4Parser::newPage(int number)
@@ -299,11 +302,11 @@ void WPS4Parser::newPage(int number)
 ////////////////////////////////////////////////////////////
 // interface with the graph/text parser
 ////////////////////////////////////////////////////////////
-int WPS4Parser::readObject(WPXInputStreamPtr input, WPSEntry const &entry)
+int WPS4Parser::readObject(RVNGInputStreamPtr input, WPSEntry const &entry)
 {
 	long actPos = input->tell();
 	int id=m_graphParser->readObject(input, entry);
-	input->seek(actPos, WPX_SEEK_SET);
+	input->seek(actPos, librevenge::RVNG_SEEK_SET);
 	return id;
 }
 
@@ -320,10 +323,10 @@ void WPS4Parser::send(WPSEntry const &entry, libwps::SubDocumentType)
 		if (m_listener.get()) m_listener->insertCharacter(' ');
 		return;
 	}
-	WPXInputStreamPtr input = getInput();
+	RVNGInputStreamPtr input = getInput();
 	long actPos = input->tell();
 	m_textParser->readText(entry);
-	input->seek(actPos, WPX_SEEK_SET);
+	input->seek(actPos, librevenge::RVNG_SEEK_SET);
 }
 
 void WPS4Parser::createDocument(WPSEntry const &entry, libwps::SubDocumentType type)
@@ -331,7 +334,7 @@ void WPS4Parser::createDocument(WPSEntry const &entry, libwps::SubDocumentType t
 	if (m_listener.get() == 0L) return;
 	WPSSubDocumentPtr subdoc(new WPS4ParserInternal::SubDocument
 	                         (getInput(), *this, entry));
-	if(type == libwps::DOC_COMMENT_ANNOTATION)
+	if (type == libwps::DOC_COMMENT_ANNOTATION)
 		m_listener->insertComment(subdoc);
 	else
 	{
@@ -339,7 +342,7 @@ void WPS4Parser::createDocument(WPSEntry const &entry, libwps::SubDocumentType t
 	}
 }
 
-void WPS4Parser::createNote(WPSEntry const &entry, WPXString const &label)
+void WPS4Parser::createNote(WPSEntry const &entry, librevenge::RVNGString const &label)
 {
 	if (m_listener.get() == 0L) return;
 	WPSSubDocumentPtr subdoc(new WPS4ParserInternal::SubDocument
@@ -347,7 +350,7 @@ void WPS4Parser::createNote(WPSEntry const &entry, WPXString const &label)
 	m_listener->insertLabelNote(WPSContentListener::FOOTNOTE, label, subdoc);
 }
 
-void WPS4Parser::createTextBox(WPSEntry const &entry, WPSPosition const &pos, WPXPropertyList &extras)
+void WPS4Parser::createTextBox(WPSEntry const &entry, WPSPosition const &pos, librevenge::RVNGPropertyList &extras)
 {
 	if (m_listener.get() == 0L) return;
 	WPSSubDocumentPtr subdoc(new WPS4ParserInternal::SubDocument
@@ -355,16 +358,21 @@ void WPS4Parser::createTextBox(WPSEntry const &entry, WPSPosition const &pos, WP
 	m_listener->insertTextBox(pos, subdoc, extras);
 }
 
+////////////////////////////////////////////////////////////
+// main funtions to parse a document, its OLE structures and its main input
+////////////////////////////////////////////////////////////
+
 // main function to parse the document
-void WPS4Parser::parse(WPXDocumentInterface *documentInterface)
+void WPS4Parser::parse(librevenge::RVNGTextInterface *documentInterface)
 {
-	WPXInputStreamPtr input=getInput();
+	RVNGInputStreamPtr input=getInput();
 	if (!input)
 	{
 		WPS_DEBUG_MSG(("WPS4Parser::parse: does not find main ole\n"));
-		throw(libwps::ParseException());
+		throw (libwps::ParseException());
 	}
-
+	if (!checkHeader(0, true))
+		throw (libwps::ParseException());
 	try
 	{
 		createOLEStructures();
@@ -383,14 +391,14 @@ void WPS4Parser::parse(WPXDocumentInterface *documentInterface)
 	catch (...)
 	{
 		WPS_DEBUG_MSG(("WPS4Parser::parse: exception catched when parsing MN0\n"));
-		throw(libwps::ParseException());
+		throw (libwps::ParseException());
 	}
 
 	setListener(createListener(documentInterface));
 	if (!m_listener)
 	{
 		WPS_DEBUG_MSG(("WPS4Parser::parse: can not create the listener\n"));
-		throw(libwps::ParseException());
+		throw (libwps::ParseException());
 	}
 	m_listener->startDocument();
 	WPSEntry ent = m_textParser->getMainTextEntry();
@@ -399,7 +407,7 @@ void WPS4Parser::parse(WPXDocumentInterface *documentInterface)
 	else
 	{
 		WPS_DEBUG_MSG(("WPS4Parser::parse: can not find main text entry\n"));
-		throw(libwps::ParseException());
+		throw (libwps::ParseException());
 	}
 #ifdef DEBUG
 	m_textParser->flushExtra();
@@ -431,15 +439,14 @@ bool WPS4Parser::createStructures()
 
 bool WPS4Parser::createOLEStructures()
 {
-	if (!getInput()) return false;
+	RVNGInputStreamPtr input=getFileInput();
+	if (!input) return false;
 
-	shared_ptr<libwps::Storage> storage = getHeader()->getOLEStorage();
-	if (!storage) return true;
+	if (!input->isStructured()) return true;
 	WPSOLEParser oleParser("MN0");
-	if (!oleParser.parse(storage)) return false;
+	if (!oleParser.parse(input)) return false;
 
-	m_graphParser->storeObjects(oleParser.getObjects(),oleParser.getObjectsId(),
-	                            oleParser.getObjectsPosition());
+	m_graphParser->storeObjects(oleParser.getObjects(),oleParser.getObjectsId());
 #ifdef DEBUG
 	// there can remain some embedded Works subdocument ( WKS, ... )
 	// with name MN0 and some unknown picture ole
@@ -455,14 +462,14 @@ bool WPS4Parser::createOLEStructures()
 		WPS_DEBUG_MSG(("WPS4Parser::createOLEStructures:: Find unparsed ole: %s\n", name.c_str()));
 
 #ifdef DEBUG_WITH_FILES
-		WPXInputStreamPtr ole = storage->getDocumentOLEStream(name.c_str());
+		RVNGInputStreamPtr ole(input->getSubStreamByName(name.c_str()));
 		if (!ole.get())
 		{
 			WPS_DEBUG_MSG(("WPS4Parser::createOLEStructures: error: can find OLE part: \"%s\"\n", name.c_str()));
 			continue;
 		}
 
-		WPXBinaryData data;
+		librevenge::RVNGBinaryData data;
 		if (libwps::readDataToEnd(ole,data))
 			libwps::Debug::dumpFile(data, name.c_str());
 #endif
@@ -475,17 +482,21 @@ bool WPS4Parser::createOLEStructures()
 // low level
 ////////////////////////////////////////////////////////////
 
+// ------------------------------------------------------------
+// function to read/check the file header or to check that an entry is ok
+// ------------------------------------------------------------
+
 // parse a basic entry: ie offset + size and check if it is valid
 bool WPS4Parser::parseEntry(std::string const &name)
 {
-	WPXInputStreamPtr input = getInput();
+	RVNGInputStreamPtr input = getInput();
 	long actPos = input->tell();
 	WPSEntry zone;
-	zone.setBegin(libwps::readU32(input));
+	zone.setBegin((long) libwps::readU32(input));
 	zone.setLength(libwps::readU16(input));
 	zone.setType(name);
 
-	bool ok = zone.valid() && checkInFile(zone.end());
+	bool ok = zone.valid() && checkFilePosition(zone.end());
 
 	if (ok)
 	{
@@ -511,41 +522,62 @@ bool WPS4Parser::parseEntry(std::string const &name)
 	return ok;
 }
 
+// basic function to check if the header is ok
+bool WPS4Parser::checkHeader(WPSHeader *header, bool /*strict*/)
+{
+	RVNGInputStreamPtr input = getInput();
+	if (!input || !checkFilePosition(0x100))
+	{
+		WPS_DEBUG_MSG(("WPS4Parser::checkHeader: file is too short\n"));
+		return false;
+	}
+
+	/* let's do the strict minimum, we does not want to break old code */
+	input->seek(0x0, librevenge::RVNG_SEEK_SET);
+	uint8_t firstOffset = libwps::readU8(input);
+	uint8_t secondOffset = libwps::readU8(input);
+	if (secondOffset != 0xFE || firstOffset > 7) return false;
+	if (header)
+		header->setMajorVersion(firstOffset<4 ? 2 : firstOffset<6 ? 3 : 4);
+	return true;
+}
+
 // read the document structure ...
 bool WPS4Parser::findZones()
 {
-	WPXInputStreamPtr input = getInput();
+	RVNGInputStreamPtr input = getInput();
 
-	if (input->seek(0x100, WPX_SEEK_SET) != 0 || input->tell() != 0x100)
+	if (!checkFilePosition(0x100))
 	{
 		WPS_DEBUG_MSG(("WPS4Parser::findZones: error: incomplete header\n"));
 		throw libwps::ParseException();
 	}
 
-	input->seek(0x0, WPX_SEEK_SET);
+	input->seek(0x0, librevenge::RVNG_SEEK_SET);
 	libwps::DebugStream f, f2;
 	f << "Entries(ZZHeader):";
 	int vers = libwps::read8(input);
 	long val = libwps::read8(input); // always 0xfe?
-	int subVers = libwps::readU16(input);
+	int apCreator = libwps::readU16(input);
 	int worksVersion = 0;
-	switch(vers)
+	switch (vers)
 	{
 	case 1:
 		m_state->m_isDosFile = true;
-		switch(subVers)
+		switch (apCreator)
 		{
 		case 0xda1:
-			subVers = 2;
+			apCreator = 2;
+		// fall-through intended
 		case 0:
 		case 1:
 			worksVersion = 1;
-			f << "vers=dos" << 1+subVers << ",";
-			subVers = 0;
+			f << "vers=dos" << 1+apCreator << ",";
+			apCreator = 0;
 			break;
 		default:
-			//  checkme: can this be Win2 file?
-			worksVersion=2;
+			//  checkme
+			worksVersion= (apCreator<10000) ? 1 : 2;
 			f << "vers=dos3/win2,";
 			break;
 		}
@@ -566,7 +598,8 @@ bool WPS4Parser::findZones()
 	if (worksVersion)
 		setVersion(worksVersion);
 	if (val != -2) f << "##unk=" << val << ",";
-	if (subVers && subVers != 0x4755) f << "##subVers=" << std::hex << subVers << std::dec << ",";
+	if (apCreator && apCreator != 0x4755)
+		f << "##apCreator=" << std::hex << apCreator << std::dec << ",";
 
 	f << "unkn1=("; // in general : same number appear two time
 	for (int i = 0; i < 2; i++)
@@ -574,11 +607,23 @@ bool WPS4Parser::findZones()
 	f << "),dim?=(";
 	for (int i = 0; i < 2; i++)
 		f << libwps::readU16(input)/1440. << ",";
-	f << "), unkn2=(";
-	for (int i = 0; i < 2; i++)
-		f << std::hex << libwps::readU16(input) << std::dec << ",";
-	f << "), dim2=" << libwps::read16(input)/1440. << ",";
-
+	f << "),";
+	int oem=(int) libwps::readU16(input);
+	if ((oem>>4)&0x7ff)
+	{
+		libwps_tools_win::Font::Type type=libwps_tools_win::Font::getTypeForOEM((oem>>4)&0x7ff);
+		if (type != libwps_tools_win::Font::UNKNOWN)
+		{
+			m_state->m_fontType = type;
+			f << "codePage=" << libwps_tools_win::Font::getTypeName(type) << ",";
+		}
+		else
+			f << "#codePage=" << std::hex << ((oem>>4)&0x7ff) << std::dec << ",";
+	}
+	if (oem & 0x800f) f << "codePage[extra]=" << std::hex << (oem & 0x800f) << std::dec << ",";
+	val=libwps::read16(input);
+	if (val) f << "unkn2=" << val << ",";
+	f << "dim2=" << libwps::read16(input)/1440. << ",";
 	val = libwps::read32(input);
 	if (val) f << std::dec << "unkn3=" << val <<",";
 	ascii().addPos(0);
@@ -590,7 +635,7 @@ bool WPS4Parser::findZones()
 	if (!m_textParser->readEntries()) return false;
 	// 0x64 -> 0x80
 	long actPos = 0x64;
-	input->seek(actPos, WPX_SEEK_SET);
+	input->seek(actPos, librevenge::RVNG_SEEK_SET);
 	readDocDim();
 
 	if (version() <= 1)
@@ -604,11 +649,11 @@ bool WPS4Parser::findZones()
 	}
 
 	actPos = 0x80;
-	input->seek(actPos, WPX_SEEK_SET);
+	input->seek(actPos, librevenge::RVNG_SEEK_SET);
 	parseEntry("EOBJ");
 
 	actPos = 0x86;
-	input->seek(actPos, WPX_SEEK_SET);
+	input->seek(actPos, librevenge::RVNG_SEEK_SET);
 	f.str("");
 	f << std::hex;
 	// {-1,-1}|{0,0}, 0,0, 0x[08][03][235=2col 6=3col 8=4col], 0|425|720
@@ -660,14 +705,14 @@ bool WPS4Parser::findZones()
 	parseEntry("End1");
 
 	actPos = 0x98;
-	input->seek(actPos, WPX_SEEK_SET);
+	input->seek(actPos, librevenge::RVNG_SEEK_SET);
 	f.str("");
 	f << "ZZHeader-II:";
 	bool empty = true;
-	long begP = libwps::readU32(input);
+	long begP = (long) libwps::readU32(input);
 	if (begP)
 	{
-		if (begP <= 0 || !checkInFile(begP)) f << "###";
+		if (begP <= 0 || !checkFilePosition(begP)) f << "###";
 		else
 		{
 			ascii().addPos(begP);
@@ -679,11 +724,11 @@ bool WPS4Parser::findZones()
 
 	int num = libwps::readU16(input);
 	int sz = libwps::readU16(input);
-	begP = libwps::readU32(input);
+	begP = (long) libwps::readU32(input);
 	if (begP)
 	{
-		if (begP <= 0 || !checkInFile(begP)) f << "###";
-		else if (checkInFile(begP+num *sz))
+		if (begP <= 0 || !checkFilePosition(begP)) f << "###";
+		else if (checkFilePosition(begP+num *sz))
 		{
 			WPSEntry zone;
 			zone.setType("PRNT");
@@ -722,7 +767,7 @@ bool WPS4Parser::findZones()
 	parseEntry("DocWInfo");
 
 	actPos = 0xb0;
-	input->seek(actPos, WPX_SEEK_SET);
+	input->seek(actPos, librevenge::RVNG_SEEK_SET);
 	f.str("");
 	f << "ZZHeader-III:";
 	empty = true;
@@ -731,7 +776,7 @@ bool WPS4Parser::findZones()
 	int i = 0;
 	while (input->tell()+4 <= 0xd0)
 	{
-		val = libwps::readU32(input);
+		val = (long) libwps::readU32(input);
 		if (val)
 		{
 			f << "f" << std::dec << i << "=" << std::hex << val << ",";
@@ -751,12 +796,16 @@ bool WPS4Parser::findZones()
 	return true;
 }
 
+// ------------------------------------------------------------
+// functions to read the document's dimension or printer structures
+// ------------------------------------------------------------
+
 // Read the page format from the file.
 bool WPS4Parser::readDocDim()
 {
 	WPSPageSpan page = WPSPageSpan();
-	WPXInputStreamPtr &input = getInput();
-	input->seek(0x64, WPX_SEEK_SET);
+	RVNGInputStreamPtr &input = getInput();
+	input->seek(0x64, librevenge::RVNG_SEEK_SET);
 	long actPos = input->tell();
 
 	libwps::DebugStream f;
@@ -823,8 +872,8 @@ bool WPS4Parser::readPrnt(WPSEntry const &entry)
 {
 	if (!entry.valid()) return false;
 
-	WPXInputStreamPtr &input = getInput();
-	input->seek(entry.begin(), WPX_SEEK_SET);
+	RVNGInputStreamPtr &input = getInput();
+	input->seek(entry.begin(), librevenge::RVNG_SEEK_SET);
 	libwps::DebugStream f;
 
 	long length = entry.length();
@@ -895,7 +944,7 @@ bool WPS4Parser::readDocWindowsInfo(WPSEntry const &entry)
 {
 	if (!entry.valid()) return false;
 
-	WPXInputStreamPtr &input = getInput();
+	RVNGInputStreamPtr &input = getInput();
 	long length = entry.length();
 	if (length < 0x154)
 	{
@@ -903,7 +952,7 @@ bool WPS4Parser::readDocWindowsInfo(WPSEntry const &entry)
 		return false;
 	}
 
-	input->seek(entry.begin(), WPX_SEEK_SET);
+	input->seek(entry.begin(), librevenge::RVNG_SEEK_SET);
 	libwps::DebugStream f;
 
 	std::string str("");
@@ -931,7 +980,7 @@ bool WPS4Parser::readDocWindowsInfo(WPSEntry const &entry)
 	f.str("");
 
 
-	input->seek(entry.begin()+0x132, WPX_SEEK_SET);
+	input->seek(entry.begin()+0x132, librevenge::RVNG_SEEK_SET);
 	f << "ZZDocWInfo(II):" << std::hex;
 	// f0=f1=-1 in one file, f0=f1=0 in another file
 	// f0=e6|1b0|2d0 ( but 2d0 in 2/3 of the files), 100<f1<438
@@ -955,7 +1004,7 @@ bool WPS4Parser::readDocWindowsInfo(WPSEntry const &entry)
 	val = libwps::readU8(input);
 	if (val)
 		f << "pageBorderStyle=" << val << ",";
-	val = libwps::readU32(input);
+	val = (long) libwps::readU32(input);
 	if (val&2)
 		f << "pageBorderShaded,";
 	if (val&1)

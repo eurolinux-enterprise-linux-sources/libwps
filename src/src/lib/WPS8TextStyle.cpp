@@ -28,6 +28,7 @@
 
 #include "WPSEntry.h"
 #include "WPSContentListener.h"
+#include "WPSFont.h"
 #include "WPSList.h"
 #include "WPSParagraph.h"
 
@@ -229,8 +230,7 @@ bool WPS8TextStyle::readStructures()
 	pos = nameTable.lower_bound("SGP ");
 	while (nameTable.end() != pos)
 	{
-		WPSEntry const &entry = pos->second;
-		pos++;
+		WPSEntry const &entry = pos++->second;
 		if (!entry.hasName("SGP ")) break;
 		if (!entry.hasType("SGP ")) continue;
 
@@ -259,9 +259,9 @@ bool WPS8TextStyle::readFontNames(WPSEntry const &entry)
 	}
 
 	long debPos = entry.begin();
-	m_input->seek(debPos, WPX_SEEK_SET);
+	m_input->seek(debPos, librevenge::RVNG_SEEK_SET);
 
-	long len = libwps::readU32(m_input); // len + 0x14 = size
+	long len = (long) libwps::readU32(m_input); // len + 0x14 = size
 	size_t n_fonts = (size_t) libwps::readU32(m_input);
 
 	if (long(4*n_fonts) > len)
@@ -341,7 +341,7 @@ bool WPS8TextStyle::readSGP(WPSEntry const &entry)
 	}
 
 	entry.setParsed();
-	m_input->seek(page_offset, WPX_SEEK_SET);
+	m_input->seek(page_offset, librevenge::RVNG_SEEK_SET);
 
 	libwps::DebugStream f;
 	if (libwps::read16(m_input) != length)
@@ -421,7 +421,7 @@ bool WPS8TextStyle::readFont(long endPos, int &id, std::string &mess)
 			continue;
 		}
 
-		switch(data.id())
+		switch (data.id())
 		{
 		case 0x0:
 			font.special().m_type = int(data.m_value);
@@ -501,7 +501,7 @@ bool WPS8TextStyle::readFont(long endPos, int &id, std::string &mess)
 		case 0x1e:
 		{
 			bool single = true;
-			switch(data.m_value)
+			switch (data.m_value)
 			{
 			case 1:
 				break; // normal
@@ -697,9 +697,9 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 			continue;
 		}
 		bool ok = true;
-		switch(data.id())
+		switch (data.id())
 		{
-			/* case 0x2: what?=data.m_value/914400.; */
+		/* case 0x2: what?=data.m_value/914400.; */
 		case 0x3:
 			switch (data.m_value)
 			{
@@ -717,7 +717,7 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 			}
 			break;
 		case 0x4:
-			switch(data.m_value)
+			switch (data.m_value)
 			{
 			case 0:
 				para.m_justify = libwps::JustificationLeft;
@@ -755,7 +755,7 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 		case 0x13: // after line spacing 152400 -> 1 line
 			para.m_spacings[2] = float(data.m_value)/152400.f;
 			break;
-			// case 0x15(type22): one time with value 0x29
+		// case 0x15(type22): one time with value 0x29
 		case 0x14:
 		{
 			// link to bullet or numbering
@@ -771,7 +771,7 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 				if (para.m_listLevel.m_type == libwps::BULLET)
 					para.m_listLevel.m_startValue=1;
 
-				switch(type)
+				switch (type)
 				{
 				case 0:
 					para.m_listLevel.m_type = libwps::NONE;
@@ -790,11 +790,12 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 					break;
 				default:
 					f << "#bullet/type=" << type << ",";
+				// fall-through intended
 				case 2:
 					para.m_listLevel.m_type = libwps::ARABIC;
 					break;
 				}
-				switch(suffixId)
+				switch (suffixId)
 				{
 				case 0:
 					para.m_listLevel.m_suffix = ")";
@@ -843,7 +844,7 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 		case 0x18:
 			f << "modTabs,";
 			break;
-			// case 0x19(type1a): number between 1 and 6 : stylesheet index ?
+		// case 0x19(type1a): number between 1 and 6 : stylesheet index ?
 		case 0x1b:
 			if (data.m_value == 1) f << "bColType=rgb?,";
 			else f << "#bColType=" << std::hex << data.m_value << std::dec << ",";
@@ -907,8 +908,8 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 		case 0x2a: // exists with f29(1d) in style sheet, find 0|1|3
 			f << "##f42=" << data.m_value << ",";
 			break;
-			// case 0x31(typ12) : always 1 ?
-			// case 0x33(typ12) : always 2 ?
+		// case 0x31(typ12) : always 1 ?
+		// case 0x33(typ12) : always 2 ?
 		case 0x32:
 		{
 			if (!data.isRead() && !data.readArrayBlock() && data.m_recursData.size() == 0)
@@ -975,7 +976,7 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 					if (mData.m_recursData[i].isNumber() && wTab == actTab-1 && what == 1)
 					{
 						int actVal = int(mData.m_recursData[i].m_value);
-						switch((actVal & 0x3))
+						switch ((actVal & 0x3))
 						{
 						case 0:
 							para.m_tabs[size_t(actTab-1)].m_alignment = WPSTabStop::LEFT;
@@ -1001,7 +1002,7 @@ bool WPS8TextStyle::readParagraph(long endPos, int &id, std::string &mess)
 						{
 							f << ", fl" << actTab<<":high="  << std::hex
 							  << actVal << std::dec;
-							switch(para.m_tabs[size_t(actTab-1)].m_alignment)
+							switch (para.m_tabs[size_t(actTab-1)].m_alignment)
 							{
 							case WPSTabStop::LEFT:
 								break;
@@ -1087,7 +1088,7 @@ void WPS8TextStyle::sendParagraph(int pId)
 	if (!m_listener) return;
 	WPSParagraph const &para=
 	    pId < 0 ? m_state->m_defaultParagraph : m_state->m_paragraphList[size_t(pId)];
-	para.send(m_listener);
+	m_listener->setParagraph(para);
 }
 
 ////////////////////////////////////////////////////////////
@@ -1112,7 +1113,7 @@ bool WPS8TextStyle::readSTSH(WPSEntry const &entry)
 	}
 
 	entry.setParsed();
-	m_input->seek(page_offset, WPX_SEEK_SET);
+	m_input->seek(page_offset, librevenge::RVNG_SEEK_SET);
 
 	libwps::DebugStream f;
 
@@ -1172,27 +1173,26 @@ bool WPS8TextStyle::readSTSH(WPSEntry const &entry)
 		}
 		f << "):";
 
-		m_input->seek(pos, WPX_SEEK_SET);
+		m_input->seek(pos, librevenge::RVNG_SEEK_SET);
 		int size = (int) libwps::readU16(m_input);
 		bool correct = true;
 		if (2*size + 2 + type != length) correct = false;
 		else
 		{
-			switch(type)
+			switch (type)
 			{
 			case 4:
 			{
-				WPXString str;
+				librevenge::RVNGString str;
 				if (size) m_mainParser.readString(m_input, 2*size, str);
 				f << "'" << str.cstr() << "'";
-				m_input->seek(pos+2+2*size, WPX_SEEK_SET);
+				m_input->seek(pos+2+2*size, librevenge::RVNG_SEEK_SET);
 				f << ", unkn=" << libwps::read32(m_input);
 				break;
 			}
 			case 0:
 			{
 				WPS8Struct::FileData mainData;
-				std::string error;
 				int dataSz = (int) libwps::readU16(m_input);
 				if (dataSz+2 != 2*size)
 				{
@@ -1248,8 +1248,7 @@ bool WPS8TextStyle::findFDPStructures(int which, std::vector<WPSEntry> &zones)
 	std::vector<WPSEntry const *> listIndexed;
 	while (pos != m_mainParser.getNameEntryMap().end())
 	{
-		WPSEntry const &entry = pos->second;
-		pos++;
+		WPSEntry const &entry = pos++->second;
 		if (!entry.hasName(indexName)) break;
 		if (!entry.hasType("PLC ")) continue;
 		listIndexed.push_back(&entry);
@@ -1259,10 +1258,9 @@ bool WPS8TextStyle::findFDPStructures(int which, std::vector<WPSEntry> &zones)
 	if (nFind==0) return false;
 
 	// can nFind be > 1 ?
-	bool ok = true;
 	for (size_t i = 0; i+1 < nFind; i++)
 	{
-		ok = true;
+		bool ok = true;
 		for (size_t j = 0; j+i+1 < nFind; j++)
 		{
 			if (listIndexed[j]->id() <= listIndexed[j+1]->id())
@@ -1284,8 +1282,7 @@ bool WPS8TextStyle::findFDPStructures(int which, std::vector<WPSEntry> &zones)
 	pos = m_mainParser.getNameEntryMap().lower_bound(sIndexName);
 	while (pos != m_mainParser.getNameEntryMap().end())
 	{
-		WPSEntry const &entry = pos->second;
-		pos++;
+		WPSEntry const &entry = pos++->second;
 		if (!entry.hasName(sIndexName)) break;
 		offsetMap.insert(std::map<long, WPSEntry const *>::value_type
 		                 (entry.begin(), &entry));
@@ -1329,8 +1326,7 @@ bool WPS8TextStyle::findFDPStructuresByHand(int which, std::vector<WPSEntry> &zo
 	    m_mainParser.getNameEntryMap().lower_bound(indexName);
 	while (pos != m_mainParser.getNameEntryMap().end())
 	{
-		WPSEntry const &entry = pos->second;
-		pos++;
+		WPSEntry const &entry = pos++->second;
 		if (!entry.hasName(indexName)) break;
 		if (!entry.hasType(indexName)) continue;
 
@@ -1344,7 +1340,7 @@ bool WPS8TextStyle::findFDPStructuresByHand(int which, std::vector<WPSEntry> &zo
 ////////////////////////////////////////////////////////////
 std::ostream &operator<<(std::ostream &o, WPS8TextStyle::FontData const &fData)
 {
-	switch(fData.m_type)
+	switch (fData.m_type)
 	{
 	case WPS8TextStyle::FontData::T_None:
 		break;
@@ -1367,7 +1363,7 @@ std::ostream &operator<<(std::ostream &o, WPS8TextStyle::FontData const &fData)
 		o << "#type=" << fData.m_type << ",";
 		break;
 	}
-	switch(fData.m_fieldType)
+	switch (fData.m_fieldType)
 	{
 	case WPS8TextStyle::FontData::F_None:
 		break;
@@ -1390,7 +1386,7 @@ std::ostream &operator<<(std::ostream &o, WPS8TextStyle::FontData const &fData)
 
 std::string WPS8TextStyle::FontData::format() const
 {
-	switch(m_fieldFormat)
+	switch (m_fieldFormat)
 	{
 	case 0x75: // 13/8/12
 		return "%m/%d/%y";

@@ -28,6 +28,9 @@
 
 #include <vector>
 
+#include "libwps_internal.h"
+#include "libwps_tools_win.h"
+
 #include "WPSEntry.h"
 #include "WPSDebug.h"
 #include "WPSTextParser.h"
@@ -39,9 +42,6 @@ struct Font;
 struct Paragraph;
 struct State;
 }
-
-typedef class WPSContentListener WPS4ContentListener;
-typedef shared_ptr<WPS4ContentListener> WPS4ContentListenerPtr;
 
 /** The class which parses text zones in a pc MS Works document v1-4
  *
@@ -68,13 +68,13 @@ class WPS4Text : public WPSTextParser
 
 public:
 	//! contructor
-	WPS4Text(WPS4Parser &parser, WPXInputStreamPtr &input);
+	WPS4Text(WPS4Parser &parser, RVNGInputStreamPtr &input);
 
 	//! destructor
 	~WPS4Text();
 
 	//! sets the listener
-	void setListener(WPS4ContentListenerPtr &listen)
+	void setListener(WPSContentListenerPtr &listen)
 	{
 		m_listener = listen;
 	}
@@ -89,13 +89,16 @@ protected:
 	//! return the main parser
 	WPS4Parser &mainParser()
 	{
-		return reinterpret_cast<WPS4Parser &> (m_mainParser);
+		return reinterpret_cast<WPS4Parser &>(m_mainParser);
 	}
 	//! return the main parser
 	WPS4Parser const &mainParser() const
 	{
-		return reinterpret_cast<WPS4Parser const &> (m_mainParser);
+		return reinterpret_cast<WPS4Parser const &>(m_mainParser);
 	}
+
+	//! returns the default codepage to use for the document
+	libwps_tools_win::Font::Type getDefaultFontType() const;
 
 	//! returns the header entry (if such entry exists, if not returns an invalid entry)
 	WPSEntry getHeaderEntry() const;
@@ -105,9 +108,6 @@ protected:
 
 	//! returns the main text entry (if such entry exists, if not returns an invalid entry)
 	WPSEntry getMainTextEntry() const;
-
-	//! returns the text position
-	WPSEntry getAllTextEntry() const;
 
 	//! reads a text section and sends it to a listener
 	bool readText(WPSEntry const &entry);
@@ -154,47 +154,39 @@ protected:
 	             DataParser parser = 0L);
 
 	//! default plc reader
-	bool defDataParser (long bot, long eot, int id, long endPos, std::string &mess);
+	bool defDataParser(long bot, long eot, int id, long endPos, std::string &mess);
 
 	//! reads the font names
 	bool readFontNames(WPSEntry const &entry);
 
 	//! reads a font properties
 	bool readFont(long endPos, int &id, std::string &mess);
-	/** sends a font to the listener
-	 *
-	 * \param font the font's properties */
-	void setProperty(WPS4TextInternal::Font const &font);
 
 	//! reads a paragraph properties
 	bool readParagraph(long endPos, int &id, std::string &mess);
-	/** sends a paragraph properties to the listener
-	 *
-	 * \param para the paragraph's properties */
-	void setProperty(WPS4TextInternal::Paragraph const &para);
 
 	/** reads the ZZDLink ( a list of filename ) */
 	bool readDosLink(WPSEntry const &entry);
 
 	//! reads a object properties ( position in text, size and definition in file)
-	bool objectDataParser (long bot, long eot, int id,
-	                       long endPos, std::string &mess);
+	bool objectDataParser(long bot, long eot, int id,
+	                      long endPos, std::string &mess);
 
 	//! reads the footnotes positions and definitions ( zones FTNd and FTNp)
 	bool readFootNotes(WPSEntry const &ftnD, WPSEntry const &ftnP);
 
 	//! reads a book mark property ( string)
-	bool footNotesDataParser (long bot, long eot, int id, long endPos, std::string &mess);
+	bool footNotesDataParser(long bot, long eot, int id, long endPos, std::string &mess);
 
 	//! reads a book mark property ( string)
-	bool bkmkDataParser (long bot, long eot, int id, long endPos, std::string &mess);
+	bool bkmkDataParser(long bot, long eot, int id, long endPos, std::string &mess);
 
 	//! reads a date time property
-	bool dttmDataParser (long bot, long eot, int id, long endPos, std::string &mess);
+	bool dttmDataParser(long bot, long eot, int id, long endPos, std::string &mess);
 
 protected:
 	//! the listener
-	WPS4ContentListenerPtr m_listener;
+	WPSContentListenerPtr m_listener;
 
 	//! the internal state
 	mutable shared_ptr<WPS4TextInternal::State> m_state;

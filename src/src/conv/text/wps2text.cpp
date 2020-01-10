@@ -21,28 +21,76 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <libwpd-stream/libwpd-stream.h>
+#include <unistd.h>
+
+#include <librevenge/librevenge.h>
+#include <librevenge-generators/librevenge-generators.h>
+#include <librevenge-stream/librevenge-stream.h>
+
 #include <libwps/libwps.h>
-#include "TextDocumentGenerator.h"
+
+using namespace libwps;
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifndef VERSION
+#define VERSION "UNKNOWN VERSION"
+#endif
+
+static int printUsage()
+{
+	printf("Usage: wps2text [OPTION] <Works Document>\n");
+	printf("\n");
+	printf("Options:\n");
+	printf("\t-h:                Shows this help message\n");
+	printf("\t-v:                Output wps2text version \n");
+	return -1;
+}
+
+static int printVersion()
+{
+	printf("wps2text %s\n", VERSION);
+	return 0;
+}
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2)
+	bool printHelp=false;
+	int ch;
+
+	while ((ch = getopt(argc, argv, "hv")) != -1)
 	{
-		printf("Usage: wps2text <Works Document>\n");
+		switch (ch)
+		{
+		case 'v':
+			printVersion();
+			return 0;
+		default:
+		case 'h':
+			printHelp = true;
+			break;
+		}
+	}
+	if (argc != 1+optind || printHelp)
+	{
+		printUsage();
 		return -1;
 	}
 
-	WPXFileStream input(argv[1]);
+	librevenge::RVNGFileStream input(argv[optind]);
 
-	WPSConfidence confidence = WPSDocument::isFileFormatSupported(&input);
-	if (confidence == WPS_CONFIDENCE_NONE || confidence == WPS_CONFIDENCE_POOR)
+	WPSKind kind;
+	WPSConfidence confidence = WPSDocument::isFileFormatSupported(&input,kind);
+	if (confidence == WPS_CONFIDENCE_NONE || kind != WPS_TEXT)
 	{
 		printf("ERROR: Unsupported file format!\n");
 		return 1;
 	}
 
-	TextDocumentGenerator listenerImpl;
+	librevenge::RVNGString document;
+	librevenge::RVNGTextTextGenerator listenerImpl(document);
 	WPSResult error = WPSDocument::parse(&input, &listenerImpl);
 
 	if (error == WPS_FILE_ACCESS_ERROR)
@@ -56,6 +104,8 @@ int main(int argc, char *argv[])
 
 	if (error != WPS_OK)
 		return 1;
+
+	printf("%s", document.cstr());
 
 	return 0;
 }

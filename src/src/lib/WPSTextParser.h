@@ -46,14 +46,14 @@ public:
 	int version() const;
 
 	//! returns the actual input
-	WPXInputStreamPtr &getInput()
+	RVNGInputStreamPtr &getInput()
 	{
 		return m_input;
 	}
 
 protected:
 	//! constructor
-	WPSTextParser(WPSParser &parser, WPXInputStreamPtr &input);
+	WPSTextParser(WPSParser &parser, RVNGInputStreamPtr &input);
 
 	//! returns the map type->entry
 	std::multimap<std::string, WPSEntry> &getNameEntryMap();
@@ -96,8 +96,8 @@ protected:
 	 * \param input, endPos: defined the zone in the file
 	 * \return true and filled id if this attribute can be parsed
 	 * \note mess can be filled to add a message in debugFile */
-	typedef bool (WPSTextParser::* FDPParser) (long endPos,
-	        int &id, std::string &mess);
+	typedef bool (WPSTextParser::* FDPParser)(long endPos,
+	                                          int &id, std::string &mess);
 
 	/** parses a FDPP or a FDPC entry (which contains a list of ATTR_TEXT/ATTR_PARAG
 	 * with their definition ) and adds found data in listFODs */
@@ -113,7 +113,7 @@ protected:
 
 private:
 	//! private copy constructor: forbidden
-	WPSTextParser(WPSTextParser const &parser );
+	WPSTextParser(WPSTextParser const &parser);
 	//! private copy operator: forbidden
 	WPSTextParser &operator=(WPSTextParser const &parser);
 
@@ -121,7 +121,7 @@ protected:
 	//! the file version
 	mutable int m_version;
 	//! the main input
-	WPXInputStreamPtr m_input;
+	RVNGInputStreamPtr m_input;
 	//! pointer to the main zone parser;
 	WPSParser &m_mainParser;
 	//! an entry which corresponds to the complete text zone

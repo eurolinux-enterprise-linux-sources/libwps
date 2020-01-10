@@ -22,8 +22,10 @@
  *
  * For further information visit http://libwps.sourceforge.net
  */
+#include <iomanip>
+#include <sstream>
 
-#include <libwpd/libwpd.h>
+#include <librevenge/librevenge.h>
 
 #include "libwps_internal.h"
 
@@ -32,9 +34,9 @@
 
 #include "WPSParagraph.h"
 
-void WPSTabStop::addTo(WPXPropertyListVector &propList, double decalX)
+void WPSTabStop::addTo(librevenge::RVNGPropertyListVector &propList, double decalX) const
 {
-	WPXPropertyList tab;
+	librevenge::RVNGPropertyList tab;
 
 	// type
 	switch (m_alignment)
@@ -58,7 +60,7 @@ void WPSTabStop::addTo(WPXPropertyListVector &propList, double decalX)
 	// leader character
 	if (m_leaderCharacter != 0x0000)
 	{
-		WPXString sLeader;
+		librevenge::RVNGString sLeader;
 		sLeader.sprintf("%c", m_leaderCharacter);
 		tab.insert("style:leader-text", sLeader);
 		tab.insert("style:leader-style", "solid");
@@ -124,7 +126,7 @@ std::ostream &operator<<(std::ostream &o, WPSParagraph const &pp)
 	if (pp.m_breakStatus & libwps::NoBreakBit) o << "dontbreak,";
 	if (pp.m_breakStatus & libwps::NoBreakWithNextBit) o << "dontbreakafter,";
 
-	switch(pp.m_justify)
+	switch (pp.m_justify)
 	{
 	case libwps::JustificationLeft:
 		break;
@@ -173,53 +175,73 @@ std::ostream &operator<<(std::ostream &o, WPSParagraph const &pp)
 	return o;
 }
 
-void WPSParagraph::send(shared_ptr<WPSContentListener> listener) const
+void WPSParagraph::addTo(librevenge::RVNGPropertyList &propList, bool inTable) const
 {
-	if (!listener)
-		return;
-	listener->setParagraphJustification(m_justify);
-	listener->setTabs(m_tabs);
-
-	double leftMargin = m_margins[1];
-	WPSList::Level level;
-	if (m_listLevelIndex >= 1)
+	switch (m_justify)
 	{
-		level = m_listLevel;
-		level.m_labelWidth = (m_margins[1]-level.m_labelIndent);
-		if (level.m_labelWidth<0.1)
-			level.m_labelWidth = 0.1;
-		leftMargin=level.m_labelIndent;
-		level.m_labelIndent = 0;
+	case libwps::JustificationLeft:
+		// doesn't require a paragraph prop - it is the default
+		propList.insert("fo:text-align", "left");
+		break;
+	case libwps::JustificationCenter:
+		propList.insert("fo:text-align", "center");
+		break;
+	case libwps::JustificationRight:
+		propList.insert("fo:text-align", "end");
+		break;
+	case libwps::JustificationFull:
+		propList.insert("fo:text-align", "justify");
+		break;
+	case libwps::JustificationFullAllLines:
+		propList.insert("fo:text-align", "justify");
+		propList.insert("fo:text-align-last", "justify");
+		break;
+	default:
+		break;
 	}
-	listener->setParagraphMargin(leftMargin, WPS_LEFT);
-	listener->setParagraphMargin(m_margins[2], WPS_RIGHT);
-	listener->setParagraphTextIndent(m_margins[0]);
-
-	double interline = m_spacings[0];
-	listener->setParagraphLineSpacing(interline>0.0 ? interline : 1.0);
-
+	if (!inTable)
+	{
+		// these properties are not appropriate when a table is opened..
+		propList.insert("fo:margin-left", m_listLevelIndex >= 1 ? m_listLevel.m_labelIndent : m_margins[1]);
+		propList.insert("fo:text-indent", m_margins[0]);
+		propList.insert("fo:margin-right", m_margins[2]);
+		if (m_backgroundColor !=  0xFFFFFF)
+		{
+			std::stringstream stream;
+			stream << "#" << std::hex << std::setfill('0') << std::setw(6)
+			       << (m_backgroundColor&0xFFFFFF);
+			propList.insert("fo:background-color", stream.str().c_str());
+		}
+		if (m_border && m_borderStyle.m_style != WPSBorder::None)
+		{
+			std::string style = m_borderStyle.getPropertyValue();
+			int border = m_border;
+			if (border == 0xF)
+			{
+				propList.insert("fo:border", style.c_str());
+			}
+			else
+			{
+				if (border & WPSBorder::LeftBit)
+					propList.insert("fo:border-left", style.c_str());
+				if (border & WPSBorder::RightBit)
+					propList.insert("fo:border-right", style.c_str());
+				if (border & WPSBorder::TopBit)
+					propList.insert("fo:border-top", style.c_str());
+				if (border & WPSBorder::BottomBit)
+					propList.insert("fo:border-bottom", style.c_str());
+			}
+		}
+	}
 	// Note:
 	// as we can not use percent, this may give a good approximation
-	listener->setParagraphMargin((10.*m_spacings[1])/72.,WPS_TOP);
-	listener->setParagraphMargin((10.*m_spacings[2])/72.,WPS_BOTTOM);
-
-	if (m_listLevelIndex >= 1)
-	{
-		shared_ptr<WPSList> theList = listener->getCurrentList();
-		if (!theList)
-		{
-			theList = shared_ptr<WPSList>(new WPSList);
-			theList->set(m_listLevelIndex, level);
-			listener->setCurrentList(theList);
-		}
-		else
-			theList->set(m_listLevelIndex, level);
-		listener->setCurrentListLevel(m_listLevelIndex);
-	}
-	else
-		listener->setCurrentListLevel(0);
-
-	listener->setParagraphBackgroundColor(m_backgroundColor);
-	listener->setParagraphBorders(m_border, m_borderStyle);
+	propList.insert("fo:margin-top", (10.*m_spacings[1])/72., librevenge::RVNG_INCH);
+	propList.insert("fo:margin-bottom", (10.*m_spacings[2])/72., librevenge::RVNG_INCH);
+	propList.insert("fo:line-height", m_spacings[0] <= 0 ? 1.0 : m_spacings[0], librevenge::RVNG_PERCENT);
+	librevenge::RVNGPropertyListVector tabStops;
+	for (size_t i=0; i< m_tabs.size(); i++)
+		m_tabs[i].addTo(tabStops, 0);
+	if (tabStops.count())
+		propList.insert("style:tab-stops", tabStops);
 }
 /* vim:set shiftwidth=4 softtabstop=4 noexpandtab: */

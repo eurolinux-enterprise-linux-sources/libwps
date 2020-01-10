@@ -40,9 +40,9 @@ namespace WPS8Struct
 {
 struct FileData;
 /** tries to read a block zone as a Data */
-bool readData(WPXInputStreamPtr input, long endPos, FileData &dt, std::string &error);
+bool readData(RVNGInputStreamPtr input, long endPos, FileData &dt, std::string &error);
 /** tries to read a block zone as a list of Data */
-bool readBlockData(WPXInputStreamPtr input, long endPos, FileData &dt, std::string &error);
+bool readBlockData(RVNGInputStreamPtr input, long endPos, FileData &dt, std::string &error);
 //! operator<< which allows to print for debugging the content of a Data
 std::ostream &operator<< (std::ostream &o, FileData const &dt);
 
@@ -82,7 +82,7 @@ struct FileData
 	//! returns a rgb color by converting the integer value field
 	uint32_t getRGBColor() const
 	{
-		uint32_t col = (uint32_t) (m_value&0xFFFFFF);
+		uint32_t col = (uint32_t)(m_value&0xFFFFFF);
 		return (((col>>16)&0xFF) |(col&0xFF00)|((col&0xFF)<<16));
 	}
 	//! returns the border style using the integer value field
@@ -148,7 +148,7 @@ struct FileData
 	}
 protected:
 	//! creates a string used to store the unparsed data
-	static std::string createErrorString(WPXInputStreamPtr input, long endPos);
+	static std::string createErrorString(RVNGInputStreamPtr input, long endPos);
 
 	//! an int which indicates the data type
 	int m_type;
@@ -157,14 +157,14 @@ protected:
 
 	long m_beginOffset /** the initial position of the data of this field */, m_endOffset /** the final position of the data of this field */;
 	//! the input
-	WPXInputStreamPtr m_input;
+	RVNGInputStreamPtr m_input;
 
 	//! operator<<
 	friend std::ostream &operator<< (std::ostream &o, FileData const &dt);
 	//! function which parses an element
-	friend bool readData(WPXInputStreamPtr input, long endPos, FileData &dt, std::string &error);
+	friend bool readData(RVNGInputStreamPtr input, long endPos, FileData &dt, std::string &error);
 	//! function which parses a set of elements
-	friend bool readBlockData(WPXInputStreamPtr input, long endPos, FileData &dt, std::string &error);
+	friend bool readBlockData(RVNGInputStreamPtr input, long endPos, FileData &dt, std::string &error);
 };
 }
 

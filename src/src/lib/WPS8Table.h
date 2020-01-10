@@ -30,12 +30,7 @@
 
 #include "WPSDebug.h"
 
-class WPSEntry;
 class WPS8Parser;
-class WPSPosition;
-
-typedef class WPSContentListener WPS8ContentListener;
-typedef shared_ptr<WPS8ContentListener> WPS8ContentListenerPtr;
 
 namespace WPS8TableInternal
 {
@@ -71,7 +66,7 @@ public:
 	~WPS8Table();
 
 	//! sets the listener
-	void setListener(WPS8ContentListenerPtr &listen)
+	void setListener(WPSContentListenerPtr &listen)
 	{
 		m_listener = listen;
 	}
@@ -87,7 +82,7 @@ public:
 
 protected:
 	//! finds all structures which correspond to a table
-	bool readStructures(WPXInputStreamPtr input);
+	bool readStructures(RVNGInputStreamPtr input);
 
 	/** tries to send a table corresponding to strsid with actual size siz
 	 *
@@ -105,7 +100,7 @@ protected:
 protected: // low level
 
 	//! reads a MCLD zone: a zone which stores the tables structures
-	bool readMCLD(WPXInputStreamPtr input, WPSEntry const &entry);
+	bool readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry);
 
 	//! returns the file version
 	int version() const;
@@ -121,7 +116,7 @@ private:
 
 protected:
 	//! the listener
-	WPS8ContentListenerPtr m_listener;
+	WPSContentListenerPtr m_listener;
 
 	//! the main parser
 	WPS8Parser &m_mainParser;

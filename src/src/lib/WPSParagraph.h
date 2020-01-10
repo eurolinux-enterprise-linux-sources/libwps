@@ -35,9 +35,6 @@
 
 #include "WPSList.h"
 
-class WPSContentListener;
-class WPXPropertyListVector;
-
 struct WPSTabStop
 {
 	enum Alignment { LEFT, RIGHT, CENTER, DECIMAL, BAR };
@@ -45,7 +42,7 @@ struct WPSTabStop
 		m_position(position), m_alignment(alignment), m_leaderCharacter(leaderCharacter), m_leaderNumSpaces(leaderNumSpaces)
 	{
 	}
-	void addTo(WPXPropertyListVector &propList, double decalX=0.0);
+	void addTo(librevenge::RVNGPropertyListVector &propList, double decalX=0.0) const;
 	//! operator <<
 	friend std::ostream &operator<<(std::ostream &o, WPSTabStop const &ft);
 	double m_position;
@@ -64,12 +61,13 @@ struct WPSParagraph
 		m_breakStatus(0), m_listLevelIndex(0), m_listLevel(), m_backgroundColor(0xFFFFFF),
 		m_border(0), m_borderStyle(), m_extra("")
 	{
-		for(int i = 0; i < 3; i++) m_margins[i] = m_spacings[i] = 0.0;
+		for (int i = 0; i < 3; i++) m_margins[i] = m_spacings[i] = 0.0;
 		m_spacings[0] = 1.0; // interline normal
 	}
+	// destructor
 	virtual ~WPSParagraph() {}
-	//! send data to the listener
-	void send(shared_ptr<WPSContentListener> listener) const;
+	//! add to the propList
+	void addTo(librevenge::RVNGPropertyList &propList, bool inTable) const;
 	//! operator <<
 	friend std::ostream &operator<<(std::ostream &o, WPSParagraph const &ft);
 

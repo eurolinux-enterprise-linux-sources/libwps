@@ -26,7 +26,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include <libwpd/libwpd.h>
+#include <librevenge/librevenge.h>
 
 #include "WPSCell.h"
 #include "WPSContentListener.h"
@@ -60,18 +60,23 @@ struct Cell : public WPSCell
 	//! operator<<
 	friend std::ostream &operator<<(std::ostream &o, Cell const &cell);
 	//! call when a cell must be send
-	virtual bool send(WPSContentListenerPtr &listener)
+	virtual bool send(WPSListenerPtr &listener)
 	{
 		if (!listener) return true;
-		WPXPropertyList propList;
-		listener->openTableCell(*this, propList);
+		WPSContentListener *listen=dynamic_cast<WPSContentListener *>(listener.get());
+		if (!listen)
+		{
+			WPS_DEBUG_MSG(("WPS8TableInternal::Cell::send: unexpected listener\n"));
+			return true;
+		}
+		listen->openTableCell(*this);
 		sendContent(listener);
-		listener->closeTableCell();
+		listen->closeTableCell();
 		return true;
 	}
 
 	//! call when the content of a cell must be send
-	virtual bool sendContent(WPSContentListenerPtr &)
+	virtual bool sendContent(WPSListenerPtr &)
 	{
 		m_tableParser.sendTextInCell(m_strsId, m_id);
 		return true;
@@ -106,7 +111,7 @@ std::ostream &operator<<(std::ostream &o, Cell const &cell)
 	{
 		o << "borderSep?=[";
 		for (int i = 0; i < 4; i++)
-			if (cell.m_bordersSep[i] > 0 ) o << cell.m_bordersSep[i] << ",";
+			if (cell.m_bordersSep[i] > 0) o << cell.m_bordersSep[i] << ",";
 			else o << "_,";
 		o << "],";
 	}
@@ -227,8 +232,7 @@ void WPS8Table::flushExtra()
 	std::map<int, Table>::iterator pos = m_state->m_tableMap.begin();
 	while (pos != m_state->m_tableMap.end())
 	{
-		Table &table = pos->second;
-		pos++;
+		Table &table = pos++->second;
 		if (table.m_parsed) continue;
 		int strsid = m_mainParser.getTableSTRSId(table.m_id);
 		if (strsid < 0) continue;
@@ -291,7 +295,7 @@ bool WPS8Table::sendTable(Vec2f const &siz, int tableId, int strsid, bool inText
 ////////////////////////////////////////////////////////////
 // find all structures which correspond to the table
 ////////////////////////////////////////////////////////////
-bool WPS8Table::readStructures(WPXInputStreamPtr input)
+bool WPS8Table::readStructures(RVNGInputStreamPtr input)
 {
 	m_state->m_tableMap.clear();
 
@@ -300,8 +304,7 @@ bool WPS8Table::readStructures(WPXInputStreamPtr input)
 	pos = nameTable.lower_bound("MCLD");
 	while (pos != nameTable.end())
 	{
-		WPSEntry const &entry = pos->second;
-		pos++;
+		WPSEntry const &entry = pos++->second;
 		if (!entry.hasName("MCLD")) break;
 		if (!entry.hasType("MCLD")) continue;
 
@@ -314,7 +317,7 @@ bool WPS8Table::readStructures(WPXInputStreamPtr input)
 ////////////////////////////////////////////////////////////
 // low level
 ////////////////////////////////////////////////////////////
-bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
+bool WPS8Table::readMCLD(RVNGInputStreamPtr input, WPSEntry const &entry)
 {
 	typedef WPS8TableInternal::Cell Cell;
 	typedef WPS8TableInternal::Table Table;
@@ -338,7 +341,7 @@ bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
 	}
 
 	entry.setParsed();
-	input->seek(page_offset, WPX_SEEK_SET);
+	input->seek(page_offset, librevenge::RVNG_SEEK_SET);
 
 	libwps::DebugStream f;
 	int mZone = (int) libwps::read32(input);
@@ -364,9 +367,9 @@ bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
 	bool ok = true;
 
 	static char const *(borderNames[]) = { "T", "L", "R", "B" };
-	static int const (borderPos[]) =
+	static int const(borderPos[]) =
 	{ WPSBorder::Top, WPSBorder::Left, WPSBorder::Right, WPSBorder::Bottom};
-	static int const (borderBit[]) =
+	static int const(borderBit[]) =
 	{
 		WPSBorder::TopBit, WPSBorder::LeftBit,
 		WPSBorder::RightBit, WPSBorder::BottomBit
@@ -528,9 +531,9 @@ bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
 					if (dt.id() == 4) cell->m_size.setX(float(dt.m_value)/914400.f);
 					else cell->m_size.setY(float(dt.m_value)/914400.f);
 					break;
-					// border size : unknown dim
-					// [ 1, 3, 1, 3, ]
-					// [ 0.666667, 1.33333, 0.666667, 1.33333, ]/30
+				// border size : unknown dim
+				// [ 1, 3, 1, 3, ]
+				// [ 0.666667, 1.33333, 0.666667, 1.33333, ]/30
 				case 6:
 				case 7:
 				case 8:
@@ -545,7 +548,7 @@ bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
 					f2 << "f" << dt.id() << "=" << std::hex << dt.m_value << std::dec << ",";
 					break;
 				case 0x13:   //find -1|6 here
-					f2 << "f" << dt.id() << "=" <<  (int) (int8_t) (dt.m_value) << ",";
+					f2 << "f" << dt.id() << "=" << (int)(int8_t)(dt.m_value) << ",";
 					break;
 				case 0x1d: // first color
 				case 0x1e: // second color
@@ -605,12 +608,13 @@ bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
 					f2 << "unknBord" << borderNames[(dt.id()-0x22)/3] << "=" << dt.m_value << ",";
 					break;
 				case 0x2c: // 1, 0, -1
-					switch(dt.m_value)
+					switch (dt.m_value)
 					{
 					case 0:
 						break; // normal
 					case 0xFF: // also unset, diff with value = 1 ?
 						f2 << "#f" << dt.id() << "=" << std::hex << dt.m_value << std::dec << ",";
+					// fall-through intended
 					case 1:
 						cell->setVerticalSet(false);
 						break;
@@ -619,7 +623,7 @@ bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
 						break;
 					}
 					break;
-					// always 0,excepted 0x15 and 0x18 which can be 0 or 1 ?
+				// always 0,excepted 0x15 and 0x18 which can be 0 or 1 ?
 				case 0xa:
 				case 0xb:
 				case 0xd:
@@ -661,7 +665,7 @@ bool WPS8Table::readMCLD(WPXInputStreamPtr input, WPSEntry const &entry)
 				f << ", unk=(" << f2.str() << ")";
 
 			if (!error.empty()) f << ",###err=" << error;
-			input->seek(lastPosOk+sz, WPX_SEEK_SET);
+			input->seek(lastPosOk+sz, librevenge::RVNG_SEEK_SET);
 
 			ascii().addPos(lastPosOk);
 			ascii().addNote(f.str().c_str());

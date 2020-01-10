@@ -26,8 +26,8 @@
 #include <iomanip>
 #include <sstream>
 
-#include <libwpd/libwpd.h>
-#include <libwpd-stream/libwpd-stream.h>
+#include <librevenge/librevenge.h>
+#include <librevenge-stream/librevenge-stream.h>
 
 
 #include "WPSDebug.h"
@@ -115,18 +115,18 @@ void DebugFile::write()
 	std::vector<NotePos>::const_iterator noteIter = m_notes.begin();
 
 	//! write the notes which does not have any position
-	while(noteIter != m_notes.end() && noteIter->m_pos < 0)
+	while (noteIter != m_notes.end() && noteIter->m_pos < 0)
 	{
 		if (!noteIter->m_text.empty())
 			std::cerr << "DebugFile::write: skipped: " << noteIter->m_text << std::endl;
-		noteIter++;
+		++noteIter;
 	}
 
 	long actualPos = 0;
 	int numSkip = int(m_skipZones.size()), actSkip = (numSkip == 0) ? -1 : 0;
 	long actualSkipEndPos = (numSkip == 0) ? -1 : m_skipZones[0].x();
 
-	m_input->seek(0,WPX_SEEK_SET);
+	m_input->seek(0,librevenge::RVNG_SEEK_SET);
 	m_file << std::hex << std::right << std::setfill('0') << std::setw(6) << 0 << " ";
 
 	do
@@ -139,33 +139,33 @@ void DebugFile::write()
 			actualPos = m_skipZones[size_t(actSkip)].y()+1;
 			m_file << "\nSkip : " << std::hex << std::setw(6) << actualSkipEndPos << "-"
 			       << actualPos-1 << "\n\n";
-			m_input->seek(actualPos, WPX_SEEK_SET);
-			stop = m_input->atEOS();
+			m_input->seek(actualPos, librevenge::RVNG_SEEK_SET);
+			stop = m_input->isEnd();
 			actSkip++;
 			actualSkipEndPos = (actSkip < numSkip) ? m_skipZones[size_t(actSkip)].x() : -1;
 		}
 		if (stop) break;
-		while(noteIter != m_notes.end() && noteIter->m_pos < actualPos)
+		while (noteIter != m_notes.end() && noteIter->m_pos < actualPos)
 		{
 			if (!noteIter->m_text.empty())
 				m_file << "Skipped: " << noteIter->m_text << std::endl;
-			noteIter++;
+			++noteIter;
 		}
 		bool printNote = noteIter != m_notes.end() && noteIter->m_pos == actualPos;
 		if (printAdr || (printNote && noteIter->m_breaking))
 			m_file << "\n" << std::setw(6) << actualPos << " ";
-		while(noteIter != m_notes.end() && noteIter->m_pos == actualPos)
+		while (noteIter != m_notes.end() && noteIter->m_pos == actualPos)
 		{
 			if (noteIter->m_text.empty())
 			{
-				noteIter++;
+				++noteIter;
 				continue;
 			}
 			if (noteIter->m_breaking)
 				m_file << "[" << noteIter->m_text << "]";
 			else
 				m_file << noteIter->m_text;
-			noteIter++;
+			++noteIter;
 		}
 
 		long ch = libwps::readU8(m_input);
@@ -173,11 +173,11 @@ void DebugFile::write()
 		actualPos++;
 
 	}
-	while (!m_input->atEOS());
+	while (!m_input->isEnd());
 
 	m_file << "\n\n";
 
-	m_input->seek(readPos,WPX_SEEK_SET);
+	m_input->seek(readPos,librevenge::RVNG_SEEK_SET);
 
 	m_actOffset=-1;
 	m_notes.resize(0);
@@ -185,28 +185,23 @@ void DebugFile::write()
 
 ////////////////////////////////////////////////////////////
 //
-// save WPXBinaryData in a file
+// save librevenge::RVNGBinaryData in a file
 //
 ////////////////////////////////////////////////////////////
 namespace Debug
 {
-bool dumpFile(WPXBinaryData &data, char const *fileName)
+bool dumpFile(librevenge::RVNGBinaryData &data, char const *fileName)
 {
 	if (!fileName) return false;
-	WPXInputStream *tmpStream =
-	    const_cast<WPXInputStream *>(data.getDataStream());
-	if (!tmpStream)
+	if (!data.size() || !data.getDataBuffer())
 	{
 		WPS_DEBUG_MSG(("Debug::dumpFile: can not find data for %s\n", fileName));
 		return false;
 	}
-
 	std::string fName = Debug::flattenFileName(fileName);
 	FILE *file = fopen(fName.c_str(), "wb");
 	if (!file) return false;
-
-	while (!tmpStream->atEOS())
-		fprintf(file, "%c", libwps::readU8(tmpStream));
+	fwrite(data.getDataBuffer(), data.size(), 1, file);
 	fclose(file);
 	return true;
 }
@@ -217,7 +212,7 @@ std::string flattenFileName(std::string const &name)
 	for (size_t i = 0; i < name.length(); i++)
 	{
 		char c = name[i];
-		switch(c)
+		switch (c)
 		{
 		case '\0':
 		case '/':

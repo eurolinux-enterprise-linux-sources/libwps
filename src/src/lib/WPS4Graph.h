@@ -32,14 +32,8 @@
 
 #include "WPSDebug.h"
 
-class WPXBinaryData;
-
-class WPSEntry;
+struct WPSOLEParserObject;
 class WPS4Parser;
-class WPSPosition;
-
-typedef class WPSContentListener WPS4ContentListener;
-typedef shared_ptr<WPS4ContentListener> WPS4ContentListenerPtr;
 
 namespace WPS4GraphInternal
 {
@@ -70,7 +64,7 @@ public:
 	~WPS4Graph();
 
 	//! sets the listener
-	void setListener(WPS4ContentListenerPtr &listen)
+	void setListener(WPSContentListenerPtr &listen)
 	{
 		m_listener = listen;
 	}
@@ -91,16 +85,15 @@ protected:
 	int version() const;
 
 	//! store a list of object
-	void storeObjects(std::vector<WPXBinaryData> const &objects,
-	                  std::vector<int> const &ids,
-	                  std::vector<WPSPosition> const &positions);
+	void storeObjects(std::vector<WPSOLEParserObject> const &objects,
+	                  std::vector<int> const &ids);
 
 	/** tries to find a picture in the zone pointed by \a entry
 	 * \return the object id or -1 if find nothing
 	 * \note the content of this zone is mainly unknown,
 	 * so this function may failed to retrieved valid data
 	 */
-	int readObject(WPXInputStreamPtr input, WPSEntry const &entry);
+	int readObject(RVNGInputStreamPtr input, WPSEntry const &entry);
 
 	//! sends an object with identificator \a id as a character with given size
 	void sendObject(Vec2f const &size, int id);
@@ -124,7 +117,7 @@ private:
 	WPS4Graph &operator=(WPS4Graph const &orig);
 protected:
 	//! the listener
-	WPS4ContentListenerPtr m_listener;
+	WPSContentListenerPtr m_listener;
 
 	//! the main parser
 	WPS4Parser &m_mainParser;

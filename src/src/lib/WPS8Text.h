@@ -30,12 +30,6 @@
 
 #include "WPSTextParser.h"
 
-class WPSEntry;
-class WPSPosition;
-
-typedef class WPSContentListener WPS8ContentListener;
-typedef shared_ptr<WPS8ContentListener> WPS8ContentListenerPtr;
-
 namespace WPS8Struct
 {
 struct FileData;
@@ -60,7 +54,7 @@ public:
 	~WPS8Text();
 
 	//! sets the listener
-	void setListener(WPS8ContentListenerPtr &listen);
+	void setListener(WPSContentListenerPtr &listen);
 
 	//! returns the number of pages
 	int numPages() const;
@@ -103,12 +97,12 @@ protected:
 	//! return the main parser
 	WPS8Parser &mainParser()
 	{
-		return reinterpret_cast<WPS8Parser &> (m_mainParser);
+		return reinterpret_cast<WPS8Parser &>(m_mainParser);
 	}
 	//! return the main parser
 	WPS8Parser const &mainParser() const
 	{
-		return reinterpret_cast<WPS8Parser const &> (m_mainParser);
+		return reinterpret_cast<WPS8Parser const &>(m_mainParser);
 	}
 
 	//
@@ -124,10 +118,10 @@ protected:
 	// String+text functions
 	//
 	//! reads a string
-	bool readString(WPXInputStreamPtr input, long page_size,
-	                WPXString &res);
+	bool readString(RVNGInputStreamPtr input, long page_size,
+	                librevenge::RVNGString &res);
 	//! reads a utf16 character, \return 0xfffd if an error
-	long readUTF16LE(WPXInputStreamPtr input, long endPos, uint16_t firstC);
+	long readUTF16LE(RVNGInputStreamPtr input, long endPos, uint16_t firstC);
 
 	/** \brief the footnote ( FTN or EDN )
 	 *
@@ -189,7 +183,7 @@ protected:
 
 protected:
 	//! the listener
-	WPS8ContentListenerPtr m_listener;
+	WPSContentListenerPtr m_listener;
 	//! the graph parser
 	shared_ptr<WPS8TextStyle> m_styleParser;
 	//! the internal state

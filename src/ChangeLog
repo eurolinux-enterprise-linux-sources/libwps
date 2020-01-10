@@ -1,3 +1,524 @@
+2014-12-30  David Tardon  <dtardon@redhat.com>  [be8d0814aa9e39705c10aee485dc304cee45ed81]
+
+	prepare for a release of 0.3.1
+
+
+2014-12-25  David Tardon  <dtardon@redhat.com>  [64b28a29dc62cc0b4812d8addf653e8e18069c6d]
+
+	afl: avoid ouf-of-bounds access to std::vector
+
+
+2014-12-15  osnola  <alonso@loria.fr>  [41dfedf3d25025fe1dc91e7a01d83a54d3259476]
+
+	Retrieve LICS encoding flag and use it to convert characters...
+
+
+2014-12-05  osnola  <alonso@loria.fr>  [54a904f5144993d8a2e88aeebe11394053ac62d6]
+
+	Spreadsheet: implemente TERM and CTERM functions
+
+
+2014-11-24  David Tardon  <dtardon@redhat.com>  [a3425ec7546bb6a77b956de696dbfca77d502603]
+
+	add compile script to .gitignore
+
+
+2014-11-24  David Tardon  <dtardon@redhat.com>  [b75eec532fc326f6157cb18730f1dcf43d01708f]
+
+	only export public symbols
+
+
+2014-11-06  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [336dc4b6ce8f68ef0e8022c2808a5255a3f10216]
+
+	Fix parallel build
+
+
+2014-09-24  osnola  <alonso@loria.fr>  [3d23daeee72c08b2101f7fceea802be6cfcd797c]
+
+	Fix another coverity's message...
+
+
+2014-09-24  osnola  <alonso@loria.fr>  [066b5b5943ec24fbe16b326d68b2617036621152]
+
+	Correct some coverity's errors...
+
+
+2014-09-24  osnola  <alonso@loria.fr>  [d8e5e266abf26a4e6c1dcfe8c325785d540d4c24]
+
+	basic merge
+
+
+2014-09-24  Caolan McNamara  <caolanm@redhat.com>  [aaf3b5805385b9e8a50d3b9857c42752f5581154]
+
+	Correct a debug message...
+
+
+2014-07-29  David Tardon  <dtardon@redhat.com>  [9426655da9ed8d9da9a081b1e1bb533cae8f4b92]
+
+	check arguments
+
+
+2014-07-29  osnola  <alonso@loria.fr>  [c93db5901c4d29ed241a7e92960972d510866409]
+
+	Try to make Clang/XCode analyzer happier...
+
+
+2014-06-04  David Tardon  <dtardon@redhat.com>  [e81b719f28608640a464149f8ce744f1c939b98d]
+
+	coverity#1019360 missing break in switch
+
+
+2014-06-04  David Tardon  <dtardon@redhat.com>  [fbc1176cb2635dcaa25fb85b300cc85126e47f00]
+
+	coverity#1165325 missing break in switch
+
+
+2014-06-04  David Tardon  <dtardon@redhat.com>  [cf7ae6b7ac7f75565fea330fd19025aaa4bfa136]
+
+	coverity#1165326 missing break in switch
+
+
+2014-06-04  David Tardon  <dtardon@redhat.com>  [fe8f37b70fa1fbb0652c285f506ebf1cdebfa3f3]
+
+	coverity#1165327 missing break in switch
+
+
+2014-06-04  David Tardon  <dtardon@redhat.com>  [86524613dbbc455844ae7029d2a5e9ebcd6072be]
+
+	coverity#1165329 missing break in switch
+
+
+2014-06-01  osnola  <alonso@loria.fr>  [6775752bef285a4ac86e02942bba8500df5ce4fc]
+
+	Wks/wdb parser: correct the float reading in a special case...
+
+
+2014-05-27  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [ddbf72f45713a5a7d8474f3ebcd25486ebacf144]
+
+	The library strictly speaking does not need the stream implementations
+
+
+2014-05-23  David Tardon  <dtardon@redhat.com>  [bb3b8941449ac6ec35aee5da6036d2310c325291]
+
+	prepare for a new release
+
+
+2014-04-27  osnola  <alonso@loria.fr>  [700879f3182445fdf732d29ffe9030a79829e0d5]
+
+	database: begin to convert the first WDB document in NDEBUG mode...
+
+
+2014-04-25  osnola  <alonso@loria.fr>  [9befa8249d8a9d217ba3e1afffedb4bbc5e6352f]
+
+	spreadsheet/database: improve the parsing: try to parse and name more zones...
+
+
+2014-04-22  osnola  <alonso@loria.fr>  [36e03651ea9a1b04d26569b21851a4dfa4d38f0e]
+
+	spreadsheet/database: improve the parsing of the field name's zone + add comments to indicate which zones are left unparsed...
+
+
+2014-04-22  osnola  <alonso@loria.fr>  [6572e4f036554eb82c8fd79fd2649b89f680464f]
+
+	basic merge...
+
+
+2014-04-21  osnola  <alonso@loria.fr>  [53f416b675c431533351ff7eed769a3a9479d8ec]
+
+	wks2*: accept also to convert WDB files...
+
+
+2014-04-21  osnola  <alonso@loria.fr>  [bca221b17e98c43db0c46115d746f7182ca07910]
+
+	Database: modify the WKS to also accept to read some WDB files, the two formats seem very similar...
+
+
+2014-04-19  osnola  <alonso@loria.fr>  [969d9be9a4ab680c70eab5100fb55c822bc90121]
+
+	Minor corrections: mainly comments...
+
+
+2014-04-18  osnola  <alonso@loria.fr>  [2716bd8d881c5db842eefb86ee46ec3ec12d9a2f]
+
+	WPS parser: try to avoid detecting database files as text document + rewrite a little the v1-v4 detection's functions...
+
+
+2014-02-10  dcb  <dcb314@users.sf.net>  [b186c00bbaa2e85f398874fa8b22f6e9a639a42f]
+
+	Correct a cppcheck warning + optimize a little the code...
+
+
+2014-02-09  osnola  <alonso@loria.fr>  [afe59f3d693ffcffea627336c9a6d5a2690c1329]
+
+	help2man: make the help's message compatible with help2man, ie. with help2man --help-option=-h --version-option=-v --no-discard-stderr
+
+
+2014-02-04  osnola  <alonso@loria.fr>  [2ede1ddf2c8e1d5c53a051118d1922eacdd63847]
+
+	Merge branch '0.3.0' with master
+
+	Conflicts:
+		astyle.options
+		src/conv/html/HtmlDocumentGenerator.cpp
+		src/conv/html/wps2html_internal.h
+		src/conv/raw/RawDocumentGenerator.cpp
+		src/conv/raw/RawDocumentGenerator.h
+		src/conv/text/TextDocumentGenerator.cpp
+		src/lib/WPS4.cpp
+		src/lib/WPS8.cpp
+		src/lib/WPS8Text.cpp
+		src/lib/WPSCell.cpp
+		src/lib/WPSContentListener.cpp
+		src/lib/WPSContentListener.h
+		src/lib/WPSOLEStream.cpp
+		src/lib/WPSOLEStream.h
+		src/lib/WPSPageSpan.cpp
+		src/lib/WPSTextParser.h
+
+2014-02-04  osnola  <alonso@loria.fr>  [e1682574765fed5766773a28d137ff6aec150466]
+
+	WKS parser: define the cell character properties in number/... cells.
+
+
+2013-12-18  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [d1fcde03803dc035902206c0d4fc36d60667696d]
+
+	Putting libwps public header to libwps namespace
+
+
+2013-12-18  osnola  <alonso@loria.fr>  [6905fced30943855b8b5262324977a0b3a44de30]
+
+	Use the new RVNGTextInterface...
+
+
+2013-12-17  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [70a25f72d72772dfad8f373369c3061837d36d30]
+
+	Fixing Windows x64 build
+
+
+2013-12-16  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [286fe4e08137dbf6e10a700461644a6bfbe59c25]
+
+	Fix Windows build
+
+
+2013-12-12  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [dda9b6c25df743a2dfc0d878776ce40ac212c259]
+
+	Fix compilation + make startDocument the first callback
+
+
+2013-12-12  osnola  <alonso@loria.fr>  [d7a49befe274816ad4cfe6be99ad496563a7b251]
+
+	Use the new startDocument interface...
+
+
+2013-12-11  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [dac85e643f06d0c51d29eb5f532514208fbe965d]
+
+	Re-astyle
+
+
+2013-12-11  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [27be097d9b115975251e0524ef469c541112ea8f]
+
+	Allow equal identing of functions
+
+
+2013-12-11  osnola  <alonso@loria.fr>  [61656f26f34f79e420d59b6d0caf8902b78a4bd7]
+
+	Use librevenge:list-id (instead of librevenge:id) to pass the list id + remove an unused variable...
+
+
+2013-12-10  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [6982d65b358dd906ddd89afb8bd52eae25a3be96]
+
+	Since we are breaking API/ABI, why not to correct this misspelling
+
+
+2013-12-09  David Tardon  <dtardon@redhat.com>  [00ce31ea56500e872ea62c03bf44969a943a1464]
+
+	make this clerner: use the var. consistently
+
+
+2013-12-09  David Tardon  <dtardon@redhat.com>  [f0f5edae9e5689b5a951b751fea2554b99754765]
+
+	document intentional fallthrough in switches
+
+
+2013-11-30  David Tardon  <dtardon@redhat.com>  [8b33afb225da91d2a88889948cfca7597f0e20cc]
+
+	add options file for astyle
+
+	(cherry picked from commit ffd8e3da4e2fcbd992d804ab15f574e9bb2a07ac)
+	Signed-off-by: osnola <alonso@loria.fr>
+
+2013-11-30  David Tardon  <dtardon@redhat.com>  [710514dfdfc922488b7306fb9607235f491f82a1]
+
+	add myself to CREDITS
+
+	(cherry picked from commit 33055daadab6b9ca2b3d98366a7aae25fd5482a7)
+	Signed-off-by: osnola <alonso@loria.fr>
+
+2013-11-28  David Tardon  <dtardon@redhat.com>  [33055daadab6b9ca2b3d98366a7aae25fd5482a7]
+
+	add myself to CREDITS
+
+
+2013-11-28  David Tardon  <dtardon@redhat.com>  [796aeb34abb192f826c6cd4987c03ec25b3eef4b]
+
+	astyle -A1 -HU -k3 -y -n -t -r \*.h \*.cpp
+
+
+2013-11-28  David Tardon  <dtardon@redhat.com>  [ffd8e3da4e2fcbd992d804ab15f574e9bb2a07ac]
+
+	add options file for astyle
+
+
+2013-11-27  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [eea90c726a7c24eb37fbbdf2f68f0532f55945b9]
+
+	shadowing?
+
+
+2013-11-27  osnola  <alonso@loria.fr>  [bed3c62cabcc900a38caa1b204d1630a2d2ae788]
+
+	minor corrections concerning insertField...
+
+
+2013-11-26  osnola  <alonso@loria.fr>  [6fc70bb9e6adde2e900f0bb23eb4655da0fe4b88]
+
+	Add pageSpan management in WKSContentListener...
+
+
+2013-11-26  osnola  <alonso@loria.fr>  [268b375241b0712338768baccceb64aa8595a406]
+
+	Add a text generator for WKS + minor modifications...
+
+
+2013-11-25  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [12de9d25189a09eeb9b210c3f133ec6760901f7c]
+
+	astyle -HU -A1 -k3 -y -n -t -r \*.cpp \*.h
+
+
+2013-11-25  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [cc09490674faf04df6686809d9c856ba4dda0f0c]
+
+	fix distcheck errors
+
+
+2013-11-25  osnola  <alonso@loria.fr>  [207a6043c7d44f2ebc86c1344863245a578909e4]
+
+	Add a CSV generator...
+
+
+2013-11-25  osnola  <alonso@loria.fr>  [2abd3d6c66bf098aee1a1879ab31ac6c35cb0edb]
+
+	astyle -HU -b -k3 -y -n -t -r \*.h \*.cpp + minor modifications
+
+
+2013-11-24  osnola  <alonso@loria.fr>  [58a42fbc81aebfec62de18f9e1d766190f8de5b5]
+
+	WKS parser: try to better retrieve the numbering style in a DOS file + recognize more functions in a formula + astyle's modifications...
+
+
+2013-11-23  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [9ec549d9de32d005f67bd3d354a9c8573802b252]
+
+	astyle with newest astyle version
+
+
+2013-11-22  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [d774a51266ef67cd9fa0a6d9ad76c6d37ed860dc]
+
+	openTable: columns -> librevenge:table-columns
+
+
+2013-11-22  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [6700b329eac359c8cf24bdebf8a9e2a6f7e9fa2c]
+
+	insertField: type -> librevenge:field-type
+
+
+2013-11-22  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [3ac1c4a2acd57e448111c422a0e3f69b31f88055]
+
+	Folding in the section columns
+
+
+2013-11-22  osnola  <alonso@loria.fr>  [4967a4fc0f1b88aed783e3463c0008aff5356eaa]
+
+	Add some new WKS formula function's names + try to recognize WKS v1 files + dump some RVNGPropertyListVector...
+
+
+2013-11-21  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [8ffab26ed5212c6971b96905f07d7290c809c724]
+
+	Fold tabStops into the propList
+
+
+2013-11-21  osnola  <alonso@loria.fr>  [45a2efa23e4d0c072aecbcb6d63b58d47eaddcd2]
+
+	Try to improve the formula parsing: recognize text and new function's names + add some function's signatures...
+
+
+2013-11-20  osnola  <alonso@loria.fr>  [23a7ddc7d09fffb33c0718bff741328b409febee]
+
+	WKS parser: check the numbering formats...
+
+
+2013-11-20  osnola  <alonso@loria.fr>  [45a4087161958b7310e6fe90f59791a220633a94]
+
+	Try to retrieve the cells' background color and the cells' border +   begin to check the numbering formats...
+
+
+2013-11-19  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [652fc10b569332ccbe8ae4953e1f138420bcf558]
+
+	Misc warning fixes
+
+
+2013-11-18  osnola  <alonso@loria.fr>  [265778a5ad8d064ddc3c026943f6e9a503e47894]
+
+	Correct a doxygen comment...
+
+
+2013-11-18  osnola  <alonso@loria.fr>  [88e6489cbfb3fee537b40040c39999d8a2f630c4]
+
+	Try to add a wks parser...
+
+
+2013-11-14  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [6d3209b672d07307d207a1f7b23f8ffa9b21d913]
+
+	Adapt to API change in librevenge
+
+
+2013-11-11  osnola  <alonso@loria.fr>  [dbea2121ce49bf2ca8b2025f03fd24e89e0fc530]
+
+	Try to add some units to RVNGPropertyList::insert and to protect some string fields, ...
+
+
+2013-11-09  osnola  <alonso@loria.fr>  [146278ecd31ff1a55b1c4bd68d1cc7ee322aeed2]
+
+	Update html/text generators to use the new interface...
+
+
+2013-11-07  osnola  <alonso@loria.fr>  [c4997d0a13d2a44d1556a390308247dfa7a2eedf]
+
+	Use correct orthograph for librevenge:mime-type...
+
+
+2013-11-06  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [1a6d88f03efe61b22fc8a9349ba47d0f94b0bd24]
+
+	Right namespace for the properties
+
+
+2013-11-06  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [8442be5a57052551b616f2180384b8cbc95add91]
+
+	Remove stray bogus forward declarations
+
+
+2013-11-06  osnola  <alonso@loria.fr>  [2837aadf759acbb0ca7659bf15fa668d3110c53a]
+
+	Use librevenge-generators to create wps2html, wps2raw, wps2text...
+
+
+2013-11-05  osnola  <alonso@loria.fr>  [a452329ad8f3e84e5f05eadc9a14f67839adb86b]
+
+	Add some librevenge:: namespace + some corrections to make libwps pass the regression tests with wps2raw...
+
+
+2013-11-04  osnola  <alonso@loria.fr>  [e90469dca4647192cf29e9369086770a39b0e194]
+
+	Use librevenge subStream functions to parse the OLE files...
+
+
+2013-11-03  osnola  <alonso@loria.fr>  [ce2cd9303c32ea2b61fe15b8ee46819dd5ccc353]
+
+	Use the new librevenge-stream interface...
+
+
+2013-11-02  osnola  <alonso@loria.fr>  [18a63366fff8d4979c29385adb2da56ddc71343f]
+
+	Make libwps depend on librevenge...
+
+
+2013-10-23  David Tardon  <dtardon@redhat.com>  [3b3d8222e128440fa5b3889abfaa136f51020833]
+
+	coverity: add missing break
+
+
+2013-10-23  osnola  <alonso@loria.fr>  [e56d453d0bacda25f2ccac05f81df25c58c9ecc7]
+
+	Use thread-safe localtime's function...
+
+
+2013-08-07  laurent alonso  <alonso@saturne.loria.fr>  [7e30faabf4ae36a2d3bc37e373dfb14525fe1a6e]
+
+	correct some clang -m32 warnings...
+
+
+2013-08-06  laurent alonso  <alonso@saturne.loria.fr>  [dce5553c77dfa9158ae56f0ed043b52795f70ede]
+
+	Retrieve the OEM document type + add new encodings and functions to use it   ( when we will know how to do that )
+
+
+2013-08-05  laurent alonso  <alonso@saturne.loria.fr>  [113ece60c2c8e2841773b5a0c28f1048a3d9012e]
+
+	make WPSParagraph independent of WPSContentListener.
+
+
+2013-08-05  laurent alonso  <alonso@saturne.loria.fr>  [7534414a2fbb08bb5bf611a4ec892a71cc03c038]
+
+	begin to make WPSParagraph more independent: now WPSContentListener stores a WPSParagraph and calls it to set paragraph's properties, to be continued...
+
+
+2013-08-05  laurent alonso  <alonso@saturne.loria.fr>  [d07ce66c67e339c98b5622b6cf1e680bf36e18be]
+
+	Continue to remove unused code in WPSContentListener...
+
+
+2013-08-05  laurent alonso  <alonso@saturne.loria.fr>  [46648dd1db61a21d1a5df2ff8e7e3e22d0cde22b]
+
+	Make WPSFont more independent + begin to clean unused part of WPSContentListener, to be continued...
+
+
+2013-08-04  laurent alonso  <alonso@saturne.loria.fr>  [a91b6ffc4596a1ea4eac43e4e1e4bfce3bd2d270]
+
+	Create a new file for storing the WPSFont class...
+
+
+2013-08-04  laurent alonso  <alonso@saturne.loria.fr>  [a8bb21e1988d250a7be3a4a7b367873d1ad2f23c]
+
+	Update wps2html to keep it up-to-date with the libmwaw version...
+
+
+2013-08-04  laurent alonso  <alonso@saturne.loria.fr>  [b0b027d37f4d8c2f7838f6007c9ed27b0f0947d3]
+
+	Use WPX_SEEK_END to optimize the reading of some blocks...
+
+
+2013-08-03  laurent alonso  <alonso@saturne.loria.fr>  [7ddd6e03754e73ebf8d43ffaf1c58ca0a2cd4aa4]
+
+	Update WPSOLEStream to be up-to-date with the libwpd/libmwaw versions.
+
+
+2013-08-03  laurent alonso  <alonso@saturne.loria.fr>  [eb46a3d663205a48d70266049906ac4614f42cae]
+
+	Continue to suppress cppcheck warnings...
+
+
+2013-08-02  laurent alonso  <alonso@saturne.loria.fr>  [5dd0ea203b1473f4a3020cc143679feb0b024e40]
+
+	Begin to remove some cppcheck warnings, to be continued...
+
+
+2013-08-02  laurent alonso  <alonso@saturne.loria.fr>  [4bb973d5a60ded14c03c1e4d51e587f1790af45b]
+
+	Try to detect not western encoding in Windows 2.0 files
+
+
+2013-07-26  David Tardon  <dtardon@redhat.com>  [b377dff5da8bc944f98c123d1dfac2658bf3a458]
+
+	drop unused private attribute
+
+
+2013-06-06  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [3f977e868f5cbab352a2bd4a95cd5d8538453df8]
+
+	Adapting doxygen to the new layout
+
+
+2013-05-30  David Tardon  <dtardon@redhat.com>  [1b6ca4bfe45b278134411a42c8db3427372d37ad]
+
+	typedef 'Pict' locally defined but not used
+
+
 2013-05-25  Fridrich Štrba  <fridrich.strba@bluewin.ch>  [9408dd6a5d03e82bc91d5cbc7a22fa25e811c05f]
 
 	Bump version
